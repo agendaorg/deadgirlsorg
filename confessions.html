@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>confessions</title>
+  <style>
+    /* Raw 2003 web default aesthetic */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      min-height: 100vh;
+      background-color: #ffffff;
+      color: #000000;
+      font-family: "Times New Roman", Times, serif;
+    }
+
+    .header-nav {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 14px;
+    }
+
+    a {
+      color: #0000ee;
+      text-decoration: underline;
+    }
+
+    a:visited {
+      color: #551a8b;
+    }
+
+    a:active {
+      color: #ff0000;
+    }
+
+    .main-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .confession-form {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .instructions {
+      font-size: 14px;
+      margin-bottom: 12px;
+      color: #333333;
+      text-align: center;
+    }
+
+    textarea {
+      width: 100%;
+      height: 180px;
+      font-family: "Times New Roman", Times, serif;
+      font-size: 14px;
+      padding: 6px;
+      border: 1px solid #7f9db9; /* Standard Windows XP classic input border */
+      box-sizing: border-box;
+      resize: vertical;
+      outline: none;
+      background-color: #ffffff;
+    }
+
+    .submit-btn {
+      margin-top: 14px;
+      font-family: "Times New Roman", Times, serif;
+      font-size: 13px;
+      padding: 2px 12px;
+      background-color: #efefef;
+      border: 2px outset #ffffff;
+      cursor: pointer;
+    }
+
+    .submit-btn:active {
+      border-style: inset;
+    }
+
+    /* Secret confirmation message */
+    #statusNotice {
+      display: none;
+      font-size: 14px;
+      color: #000000;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Quiet raw top-left link back home -->
+  <div class="header-nav">
+    <a href="index.html">&lt; back</a> | dead girls
+  </div>
+
+  <!-- Central form area -->
+  <div class="main-container">
+    <form class="confession-form" id="voidForm" onsubmit="handleVoidSubmit(event)">
+      <div class="instructions">what are you running from?</div>
+      <textarea id="confessionInput" name="confession" required placeholder="type here..."></textarea>
+      <input type="submit" value="submit a secret" class="submit-btn" />
+      <div id="statusNotice">submitted anonymously.</div>
+    </form>
+  </div>
+
+  <script>
+    function handleVoidSubmit(event) {
+      event.preventDefault();
+      
+      const textarea = document.getElementById('confessionInput');
+      const notice = document.getElementById('statusNotice');
+      const submitBtn = document.querySelector('.submit-btn');
+
+      // 1. Clear input & display anonymous confirmation text
+      textarea.value = '';
+      notice.style.display = 'block';
+      submitBtn.disabled = true;
+
+      // 2. Redirect back to index.html after 800ms
+      setTimeout(function() {
+        window.location.href = 'index.html';
+      }, 800);
+    }
+  </script>
+
+</body>
+</html>
