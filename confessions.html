@@ -107,7 +107,11 @@
 
   <!-- Central form area -->
   <div class="main-container">
-    <form class="confession-form" id="voidForm" onsubmit="handleVoidSubmit(event)">
+    <form class="confession-form" id="voidForm" action="https://api.web3forms.com/submit" method="POST" onsubmit="handleVoidSubmit(event)">
+      
+      <input type="hidden" name="access_key" value="90dc7697-60e8-45cf-a432-1c7c623d62b8">
+      <input type="hidden" name="subject" value="New Confession Received">
+      
       <div class="instructions">What happened to the person you were supposed to become</div>
       <textarea id="confessionInput" name="confession" required placeholder="type here..."></textarea>
       <input type="submit" value="submit" class="submit-btn" />
@@ -116,20 +120,32 @@
   </div>
 
   <script>
-    function handleVoidSubmit(event) {
+    async function handleVoidSubmit(event) {
       event.preventDefault();
       
+      const form = event.target;
       const textarea = document.getElementById('confessionInput');
       const notice = document.getElementById('statusNotice');
       const submitBtn = document.querySelector('.submit-btn');
       
-      // 1. Clear input immediately, show confirmation, disable button
-      textarea.value = '';
+      // 1. Show confirmation notice & disable button
       notice.style.display = 'block';
       submitBtn.disabled = true;
 
-      // 2. Redirect back to index.html after 800ms
+      try {
+        // 2. Submit form data asynchronously in the background to the email handler
+        const formData = new FormData(form);
+        await fetch(form.action, {
+          method: 'POST',
+          body: formData
+        });
+      } catch (e) {
+        // Fail silently to keep the eerie feel if network hiccups
+      }
+
+      // 3. Clear text and redirect back to index.html after 800ms
       setTimeout(function() {
+        textarea.value = '';
         window.location.href = 'index.html';
       }, 800);
     }
