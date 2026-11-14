@@ -16,6 +16,22 @@
       font-family: "Times New Roman", Times, serif;
     }
 
+    /* 2003 AOL-Style Solid White Intro Overlay */
+    #introOverlay {
+      position: fixed;
+      inset: 0;
+      background-color: #ffffff;
+      z-index: 100;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #eyeCanvas {
+      display: block;
+      image-rendering: pixelated;
+    }
+
     .header-nav {
       position: absolute;
       top: 10px;
@@ -67,7 +83,7 @@
       font-size: 14px;
       padding: 6px;
       margin-bottom: 8px;
-      border: 1px solid #7f9db9; /* Standard Windows XP classic input border */
+      border: 1px solid #7f9db9;
       box-sizing: border-box;
       outline: none;
       background-color: #ffffff;
@@ -79,7 +95,7 @@
       font-family: "Times New Roman", Times, serif;
       font-size: 14px;
       padding: 6px;
-      border: 1px solid #7f9db9; /* Standard Windows XP classic input border */
+      border: 1px solid #7f9db9;
       box-sizing: border-box;
       resize: vertical;
       outline: none;
@@ -100,24 +116,32 @@
       border-style: inset;
     }
 
-    /* Secret confirmation message style */
-    #statusNotice {
+    /* Inline Font-Shuffle Display Area under submit button */
+    #shuffleContainer {
       display: none;
-      font-size: 14px;
-      color: #000000;
-      margin-top: 12px;
+      margin-top: 14px;
       text-align: center;
+      height: 24px;
+    }
+
+    #shuffleText {
+      font-size: 13px;
+      letter-spacing: 1px;
+      color: #000000;
     }
   </style>
 </head>
 <body>
 
-  <!-- Quiet raw top-left link back home -->
+  <!-- 4-Second 2003 AOL-Style Eye Intro Overlay -->
+  <div id="introOverlay">
+    <canvas id="eyeCanvas" width="140" height="70"></canvas>
+  </div>
+
   <div class="header-nav">
     <a href="index.html">&lt; back</a> 
   </div>
 
-  <!-- Central form area -->
   <div class="main-container">
     <form class="confession-form" id="voidForm" action="https://api.web3forms.com/submit" method="POST" onsubmit="handleVoidSubmit(event)">
       
@@ -129,45 +153,126 @@
       <input type="email" id="emailInput" name="email" class="text-input" required placeholder="email">
       <textarea id="confessionInput" name="confession" required placeholder="type here..."></textarea>
       <input type="submit" value="submit" class="submit-btn" />
-      <div id="statusNotice">response submitted.</div>
+      
+      <!-- Inline font-shuffle animation slot right beneath the submit button -->
+      <div id="shuffleContainer">
+        <div id="shuffleText">deadgirls</div>
+      </div>
     </form>
   </div>
 
   <script>
+    // 2003 AOL Graphic Style Retro Eye Intro
+    const eCanvas = document.getElementById('eyeCanvas');
+    const eCtx = eCanvas.getContext('2d');
+    let frame = 0;
+
+    function drawRetroEye() {
+      eCtx.fillStyle = '#ffffff';
+      eCtx.fillRect(0, 0, eCanvas.width, eCanvas.height);
+
+      const cx = eCanvas.width / 2;
+      const cy = eCanvas.height / 2;
+      
+      frame++;
+
+      eCtx.strokeStyle = '#000000';
+      eCtx.lineWidth = 2;
+      eCtx.fillStyle = '#ffffff';
+      
+      eCtx.beginPath();
+      eCtx.moveTo(cx - 50, cy);
+      eCtx.quadraticCurveTo(cx, cy - 28, cx + 50, cy);
+      eCtx.quadraticCurveTo(cx, cy + 28, cx - 50, cy);
+      eCtx.closePath();
+      eCtx.fill();
+      eCtx.stroke();
+
+      const isBlinking =
+        (frame > 25 && frame < 45) ||
+        (frame > 85 && frame < 105);
+
+      if (isBlinking) {
+        eCtx.beginPath();
+        eCtx.moveTo(cx - 35, cy);
+        eCtx.lineTo(cx + 35, cy);
+        eCtx.stroke();
+      } else {
+        eCtx.fillStyle = '#000000';
+        eCtx.beginPath();
+        eCtx.arc(cx, cy, 7, 0, Math.PI * 2);
+        eCtx.fill();
+
+        eCtx.fillStyle = '#ffffff';
+        eCtx.fillRect(cx + 2, cy - 4, 2, 2);
+      }
+
+      if (frame < 160) {
+        requestAnimationFrame(drawRetroEye);
+      }
+    }
+
+    drawRetroEye();
+
+    // Exactly 4 seconds intro cut
+    setTimeout(() => {
+      const overlay = document.getElementById('introOverlay');
+      overlay.style.display = 'none';
+    }, 4000);
+
+    // Submission Font-Shuffle Handler (under the button)
     async function handleVoidSubmit(event) {
       event.preventDefault();
       
       const form = event.target;
-      const nameInput = document.getElementById('nameInput');
-      const emailInput = document.getElementById('emailInput');
-      const textarea = document.getElementById('confessionInput');
-      const notice = document.getElementById('statusNotice');
-      const submitBtn = document.querySelector('.submit-btn');
+      const submitBtn = form.querySelector('.submit-btn');
+      const shuffleContainer = document.getElementById('shuffleContainer');
+      const shuffleText = document.getElementById('shuffleText');
       
-      // 1. Show confirmation notice & disable button
-      notice.style.display = 'block';
-      submitBtn.disabled = true;
+      // Disable and hide submit button, reveal shuffle slot underneath
+      submitBtn.style.display = 'none';
+      shuffleContainer.style.display = 'block';
 
       try {
-        // 2. Submit form data asynchronously in the background to the email handler
         const formData = new FormData(form);
         await fetch(form.action, {
           method: 'POST',
           body: formData
         });
-      } catch (e) {
-        // Fail silently to keep the eerie feel if network hiccups
-      }
+      } catch (e) {}
 
-      // 3. Clear inputs and redirect back to index.html after 800ms
-      setTimeout(function() {
-        nameInput.value = '';
-        emailInput.value = '';
-        textarea.value = '';
-        window.location.href = 'index.html';
-      }, 800);
+      const fonts = [
+        'Impact, sans-serif',
+        '"Courier New", Courier, monospace',
+        '"Comic Sans MS", cursive, sans-serif',
+        'Georgia, serif',
+        'Verdana, sans-serif',
+        '"Times New Roman", Times, serif',
+        'Arial, sans-serif'
+      ];
+
+      const textStyles = ['deadgirls', 'DEADGIRLS', 'dead_girls', 'd e a d g i r l s', 'DEAD GIRLS'];
+
+      let shuffleElapsed = 0;
+      const shuffleInterval = setInterval(() => {
+        shuffleElapsed += 120;
+        
+        const randomFont = fonts[Math.floor(Math.random() * fonts.length)];
+        const randomText = textStyles[Math.floor(Math.random() * textStyles.length)];
+        const randomSize = 11 + Math.floor(Math.random() * 5) + 'px';
+
+        shuffleText.style.fontFamily = randomFont;
+        shuffleText.style.fontSize = randomSize;
+        shuffleText.textContent = randomText;
+
+        if (shuffleElapsed >= 4500) {
+          clearInterval(shuffleInterval);
+          window.location.href = 'index.html';
+        }
+      }, 120);
     }
   </script>
 
 </body>
 </html>
+```[cite: 3]
