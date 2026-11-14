@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>play</title>
   <style>
-    /* Raw 2003 web default aesthetic */
+    /* Raw 2003 web default aesthetic (White Background for menus/game) */
     html, body {
       margin: 0;
       padding: 0;
@@ -25,7 +25,7 @@
       top: 10px;
       left: 10px;
       font-size: 14px;
-      z-index: 10;
+      z-index: 25;
     }
 
     a {
@@ -47,7 +47,37 @@
       right: 12px;
       font-size: 14px;
       color: #000000;
-      z-index: 10;
+      z-index: 25;
+    }
+
+    /* Surveillance Camera Switcher UI */
+    #camera-switcher {
+      position: absolute;
+      top: 32px;
+      right: 12px;
+      font-size: 11px;
+      z-index: 25;
+      background: rgba(255, 255, 255, 0.85);
+      padding: 3px 6px;
+      border: 1px solid #000000;
+      display: none;
+    }
+
+    .cam-btn {
+      background: none;
+      border: none;
+      font-family: "Times New Roman", Times, serif;
+      font-size: 11px;
+      cursor: pointer;
+      padding: 0 4px;
+      color: #0000ee;
+      text-decoration: underline;
+    }
+
+    .cam-btn.active {
+      color: #ff0000;
+      font-weight: bold;
+      text-decoration: none;
     }
 
     #prompt-text {
@@ -58,7 +88,7 @@
       font-size: 15px;
       color: #000000;
       pointer-events: none;
-      z-index: 10;
+      z-index: 20;
     }
 
     #controls-hint {
@@ -69,7 +99,22 @@
       font-size: 12px;
       color: #555555;
       pointer-events: none;
-      z-index: 10;
+      z-index: 20;
+    }
+
+    /* Full Color MP4 Surveillance & Intro Video Display (Zero tint or transparency) */
+    #surveillanceVideo {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 1.0;
+      mix-blend-mode: normal;
+      filter: none;
+      z-index: 2;
+      display: none;
+      background: #000000;
     }
 
     canvas {
@@ -77,6 +122,9 @@
       width: 100%;
       height: 100%;
       cursor: crosshair;
+      position: relative;
+      z-index: 10;
+      background: transparent;
     }
 
     /* Intro & Warning Screen Overlays */
@@ -84,6 +132,7 @@
       position: fixed;
       inset: 0;
       background-color: #ffffff;
+      color: #000000;
       z-index: 50;
       display: flex;
       flex-direction: column;
@@ -104,6 +153,7 @@
 
     .classic-btn {
       background: #efefef;
+      color: #000000;
       border: 2px outset #ffffff;
       font-family: "Times New Roman", Times, serif;
       font-size: 13px;
@@ -115,13 +165,54 @@
       border-style: inset;
     }
 
-    /* Full screen overlay for "they found you" & ending */
-    #overlay {
+    /* Attendance Drawing Interface */
+    #drawing-container {
+      display: none;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #ffffff;
+      color: #000000;
+      border: 1px solid #000000;
+      padding: 18px;
+      z-index: 30;
+      text-align: center;
+      box-sizing: border-box;
+    }
+
+    #sketchCanvas {
+      border: 1px solid #000000;
+      background: #ffffff;
+      cursor: crosshair;
+      touch-action: none;
+      display: block;
+      margin: 0 auto 10px auto;
+    }
+
+    /* Story Context Screen */
+    #story-overlay {
       display: none;
       position: fixed;
       inset: 0;
       background-color: #ffffff;
-      z-index: 20;
+      color: #000000;
+      z-index: 45;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 30px;
+      box-sizing: border-box;
+    }
+
+    /* Full screen overlay for broadcast static & eye transition */
+    #overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background-color: #000000;
+      z-index: 40;
       flex-direction: column;
       justify-content: center;
       align-items: center;
@@ -130,31 +221,37 @@
     }
 
     #overlay-message {
-      font-size: 18px;
-      color: #000000;
-      margin-bottom: 14px;
+      font-size: 20px;
+      color: #ff0000;
+      font-weight: bold;
+      letter-spacing: 3px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
     }
 
     #overlay-sub {
       font-size: 13px;
-      color: #555555;
+      color: #999999;
     }
   </style>
 </head>
 <body>
 
+  <!-- Full Color Background MP4 Surveillance & Intro Video Display -->
+  <video id="surveillanceVideo" playsinline></video>
+
   <!-- Screen 1: Lore / Intro Screen -->
   <div id="intro-screen" class="screen-overlay">
     <div class="screen-text">
-      It's November 2003. You are locked inside a notorious underground psychological conditioning facility built for elite pop stars and public figures. The facility tests your mental compliance by forcing you to watch raw, unedited surveillance video clips streamed directly from an internal server folder.<br><br>
-      To survive you must escape the facility before they find you.
+      It's November 2003. You are locked inside a notorious underground psychological conditioning facility built for elite pop stars and public figures. The facility tests your mental compliance by forcing you to watch surveillance video feeds streamed directly from internal archives.<br><br>
+      To survive you must bypass attendance checks and escape before they find you.
     </div>
     <button class="classic-btn" onclick="triggerWarningScreen()">[continue]</button>
   </div>
 
-  <!-- Screen 2: Timed 6-Second Warning Screen with Eerie Eye & Static Sound -->
+  <!-- Screen 2: Timed 6-Second Warning Screen with Detailed Eerie Eye & Static -->
   <div id="warning-screen" class="screen-overlay" style="display: none;">
-    <canvas id="eyeCanvas" width="120" height="70" style="margin-bottom: 20px;"></canvas>
+    <canvas id="eyeCanvas" width="220" height="120" style="margin-bottom: 16px;"></canvas>
     <div class="screen-text" style="font-weight: bold; color: #ff0000; text-transform: uppercase; letter-spacing: 1px;">
       WARNING: UNAUTHORIZED SUBJECT TRACE ACTIVE.<br>ALL COMPLIANCE FAILURES ARE PERMANENTLY LOGGED.<br><br>
       <span id="countdown-timer" style="font-size: 12px; color: #555555;">initializing facility in 6s...</span>
@@ -165,15 +262,43 @@
     <a href="index.html">&lt; back</a>
   </div>
 
-  <div id="status-bar">1 / 3</div>
-  <div id="prompt-text">break the phone</div>
-  <div id="controls-hint">[tap / spacebar]</div>
+  <div id="status-bar">INTRO</div>
+  
+  <!-- Seamless Camera Switcher UI -->
+  <div id="camera-switcher">
+    FEED: 
+    <button class="cam-btn active" id="btn-cam1" onclick="switchCamera('images/camera1.mp4', 1)">1</button>
+    <button class="cam-btn" id="btn-cam2" onclick="switchCamera('images/camera2.mp4', 2)">2</button>
+    <button class="cam-btn" id="btn-cam3" onclick="switchCamera('images/camera3.mp4', 3)">3</button>
+  </div>
+
+  <div id="prompt-text"></div>
+  <div id="controls-hint"></div>
 
   <canvas id="gameCanvas"></canvas>
 
+  <!-- Attendance Drawing Interface (3 Stages with 40s Timer) -->
+  <div id="drawing-container">
+    <div id="draw-prompt-title" style="font-size: 13px; margin-bottom: 4px; font-weight: bold;">ATTENDANCE SUBMISSION [PRODIGY PROTOCOL]</div>
+    <div id="draw-prompt-desc" style="font-size: 11px; margin-bottom: 10px; color: #555;">draw a happy family</div>
+    <div id="draw-timer-display" style="font-size: 12px; color: #ff0000; margin-bottom: 8px;">time left: 40s</div>
+    <canvas id="sketchCanvas" width="280" height="150"></canvas>
+    <button class="classic-btn" onclick="submitAttendanceDrawing()">[submit for attendance]</button>
+  </div>
+
+  <!-- Story Context Screen -->
+  <div id="story-overlay">
+    <div class="screen-text" style="font-size: 16px; font-style: italic; color: #222222; margin-bottom: 30px;">
+      "You: that should buy me enough time to leave this place.."
+    </div>
+    <button class="classic-btn" onclick="proceedToFinalEscape()">[continue escape]</button>
+  </div>
+
+  <!-- Broadcast Static & Eerie Eye Overlay -->
   <div id="overlay">
-    <div id="overlay-message">they found you</div>
-    <div id="overlay-sub"></div>
+    <canvas id="jumpEyeCanvas" width="240" height="130" style="margin-bottom: 14px; display: none;"></canvas>
+    <div id="overlay-message">broadcast interruption</div>
+    <div id="overlay-sub">switching archive feed...</div>
   </div>
 
   <script>
@@ -182,9 +307,13 @@
     const statusBar = document.getElementById('status-bar');
     const promptText = document.getElementById('prompt-text');
     const controlsHint = document.getElementById('controls-hint');
+    const drawingContainer = document.getElementById('drawing-container');
+    const storyOverlay = document.getElementById('story-overlay');
     const overlay = document.getElementById('overlay');
     const overlayMsg = document.getElementById('overlay-message');
     const overlaySub = document.getElementById('overlay-sub');
+    const surveillanceVideo = document.getElementById('surveillanceVideo');
+    const cameraSwitcher = document.getElementById('camera-switcher');
 
     let W = window.innerWidth;
     let H = window.innerHeight;
@@ -198,10 +327,28 @@
     window.addEventListener('resize', resize);
     resize();
 
-    // --- AUDIO & WARNING SCREEN LOGIC ---
+    // --- MP4 SURVEILLANCE CAMERA LOGIC ---
+    function switchCamera(srcFile, camNum) {
+      surveillanceVideo.src = srcFile;
+      surveillanceVideo.load();
+      surveillanceVideo.muted = false;
+      surveillanceVideo.style.display = 'block';
+      surveillanceVideo.play().catch(e => {});
+
+      for (let i = 1; i <= 3; i++) {
+        const btn = document.getElementById('btn-cam' + i);
+        if (btn) btn.classList.remove('active');
+      }
+      const activeBtn = document.getElementById('btn-cam' + camNum);
+      if (activeBtn) activeBtn.classList.add('active');
+      playOminousThud(140, 0.05);
+    }
+
+    // --- AUDIO ENGINE ---
     let audioCtx = null;
     let staticNoiseNode = null;
     let staticGainNode = null;
+    let chatterInterval = null;
 
     function initAudio() {
       if (!audioCtx) {
@@ -212,20 +359,35 @@
       }
     }
 
-    function playTone(freq = 440, dur = 0.05, type = 'square', vol = 0.05) {
+    function makeDistortionCurve(amount = 400) {
+      const k = amount;
+      const n_samples = 44100;
+      const curve = new Float32Array(n_samples);
+      const deg = Math.PI / 180;
+      for (let i = 0; i < n_samples; ++i) {
+        const x = (i * 2) / n_samples - 1;
+        curve[i] = ((3 + k) * x * 20 * deg) / (Math.PI + k * Math.abs(x));
+      }
+      return curve;
+    }
+
+    function playOminousThud(freq = 55, dur = 0.25) {
       try {
         initAudio();
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        osc.type = type;
+        osc.type = 'sine';
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+        osc.frequency.exponentialRampToValueAtTime(18, audioCtx.currentTime + dur);
+
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+
         osc.connect(gain);
         gain.connect(audioCtx.destination);
         osc.start();
         osc.stop(audioCtx.currentTime + dur);
-      } catch(e) {}
+      } catch (e) {}
     }
 
     function startStaticNoise() {
@@ -236,19 +398,25 @@
         const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
         const output = noiseBuffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) {
-          output[i] = (Math.random() * 2 - 1) * 0.3;
+          output[i] = (Math.random() * 2 - 1) * 0.45;
         }
         staticNoiseNode = audioCtx.createBufferSource();
         staticNoiseNode.buffer = noiseBuffer;
         staticNoiseNode.loop = true;
 
-        staticGainNode = audioCtx.createGain();
-        staticGainNode.gain.value = 0.1;
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 1300;
+        filter.Q.value = 1.2;
 
-        staticNoiseNode.connect(staticGainNode);
+        staticGainNode = audioCtx.createGain();
+        staticGainNode.gain.value = 0.22;
+
+        staticNoiseNode.connect(filter);
+        filter.connect(staticGainNode);
         staticGainNode.connect(audioCtx.destination);
         staticNoiseNode.start();
-      } catch(e) {}
+      } catch (e) {}
     }
 
     function stopStaticNoise() {
@@ -258,69 +426,479 @@
           staticNoiseNode.disconnect();
           staticNoiseNode = null;
         }
-      } catch(e) {}
+      } catch (e) {}
     }
 
-    // Draw Eerie Eye on Warning Screen
-    const eyeCanvas = document.getElementById('eyeCanvas');
-    const eyeCtx = eyeCanvas.getContext('2d');
-    function drawWarningEye() {
-      eyeCtx.clearRect(0, 0, 120, 70);
-      eyeCtx.strokeStyle = '#000000';
-      eyeCtx.lineWidth = 1.5;
-      eyeCtx.beginPath();
-      eyeCtx.ellipse(60, 35, 50, 22, 0, 0, Math.PI * 2);
-      eyeCtx.stroke();
-      eyeCtx.beginPath();
-      eyeCtx.arc(60, 35, 9, 0, Math.PI * 2);
-      eyeCtx.fillStyle = '#ff0000';
-      eyeCtx.fill();
+    function playLoudStaticTransition() {
+      try {
+        initAudio();
+        const dur = 2.8;
+        const bufferSize = audioCtx.sampleRate * dur;
+        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+
+        for (let i = 0; i < bufferSize; i++) {
+          const burst = Math.sin(i * 0.004) > -0.3 ? 1.0 : 0.4;
+          const crackle = Math.random() > 0.95 ? (Math.random() * 2 - 1) * 2.0 : 0;
+          output[i] = ((Math.random() * 2 - 1) * burst + crackle) * 1.2;
+        }
+
+        const noiseSource = audioCtx.createBufferSource();
+        noiseSource.buffer = noiseBuffer;
+
+        const bandpass = audioCtx.createBiquadFilter();
+        bandpass.type = 'bandpass';
+        bandpass.frequency.setValueAtTime(1600, audioCtx.currentTime);
+        bandpass.Q.value = 1.2;
+
+        const shaper = audioCtx.createWaveShaper();
+        shaper.curve = makeDistortionCurve(500);
+        shaper.oversample = '4x';
+
+        const humOsc = audioCtx.createOscillator();
+        humOsc.type = 'sawtooth';
+        humOsc.frequency.setValueAtTime(50, audioCtx.currentTime);
+        const humGain = audioCtx.createGain();
+        humGain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+        humGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+
+        const masterGain = audioCtx.createGain();
+        masterGain.gain.setValueAtTime(1.0, audioCtx.currentTime);
+        masterGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+
+        noiseSource.connect(bandpass);
+        bandpass.connect(shaper);
+        shaper.connect(masterGain);
+
+        humOsc.connect(humGain);
+        humGain.connect(masterGain);
+
+        masterGain.connect(audioCtx.destination);
+
+        noiseSource.start();
+        humOsc.start();
+        humOsc.stop(audioCtx.currentTime + dur);
+      } catch (e) {}
     }
-    drawWarningEye();
+
+    function startVoiceChatter() {
+      try {
+        initAudio();
+        if (chatterInterval) return;
+        chatterInterval = setInterval(() => {
+          if (level !== 2 || gameState !== 'PLAYING') return;
+
+          const diff = Math.abs(waveAmp - targetAmp);
+          const clarity = Math.max(0.25, 1 - diff / 65);
+
+          const syllables = 2 + Math.floor(Math.random() * 2);
+          for (let s = 0; s < syllables; s++) {
+            const delay = s * 0.14;
+            const dur = 0.1 + Math.random() * 0.08;
+            const startTime = audioCtx.currentTime + delay;
+
+            const bufLen = Math.floor(audioCtx.sampleRate * dur);
+            const buf = audioCtx.createBuffer(1, bufLen, audioCtx.sampleRate);
+            const data = buf.getChannelData(0);
+            for (let i = 0; i < bufLen; i++) {
+              const glottal = Math.sin(i * 0.09) * 0.5;
+              data[i] = ((Math.random() * 2 - 1) * 0.6 + glottal);
+            }
+
+            const src = audioCtx.createBufferSource();
+            src.buffer = buf;
+
+            const f1 = audioCtx.createBiquadFilter();
+            f1.type = 'bandpass';
+            f1.frequency.setValueAtTime(400 + Math.random() * 380, startTime);
+            f1.Q.value = 6.0;
+
+            const f2 = audioCtx.createBiquadFilter();
+            f2.type = 'bandpass';
+            f2.frequency.setValueAtTime(1150 + Math.random() * 850, startTime);
+            f2.Q.value = 7.0;
+
+            const gain = audioCtx.createGain();
+            const vol = 0.08 + clarity * 0.28;
+            gain.gain.setValueAtTime(0.001, startTime);
+            gain.gain.linearRampToValueAtTime(vol, startTime + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, startTime + dur);
+
+            src.connect(f1);
+            src.connect(f2);
+            f1.connect(gain);
+            f2.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            src.start(startTime);
+          }
+        }, 850);
+      } catch (e) {}
+    }
+
+    function stopVoiceChatter() {
+      if (chatterInterval) {
+        clearInterval(chatterInterval);
+        chatterInterval = null;
+      }
+    }
+
+    // --- ANATOMICAL EERIE EYE RENDERER ---
+    const eyeVeins = [
+      { startAngle: -0.25, len: 36, jitter: [4, -5, 3] },
+      { startAngle: 0.18, len: 38, jitter: [-4, 6, -3] },
+      { startAngle: 0.42, len: 30, jitter: [3, 4, -2] },
+      { startAngle: Math.PI - 0.22, len: 38, jitter: [-5, 4, -4] },
+      { startAngle: Math.PI + 0.15, len: 35, jitter: [4, -6, 3] },
+      { startAngle: Math.PI + 0.38, len: 28, jitter: [-3, -3, 2] }
+    ];
+
+    function renderAnatomicalEye(targetCanvas, darkBg = false, twitchX = 0, twitchY = 0) {
+      const eCtx = targetCanvas.getContext('2d');
+      const w = targetCanvas.width;
+      const h = targetCanvas.height;
+      eCtx.clearRect(0, 0, w, h);
+
+      const cx = w / 2;
+      const cy = h / 2;
+      const rx = w * 0.40;
+      const ry = h * 0.28;
+
+      const primaryStroke = darkBg ? '#ffffff' : '#000000';
+      const scleraFill = darkBg ? '#f4f0f0' : '#ffffff';
+
+      eCtx.strokeStyle = darkBg ? 'rgba(255,255,255,0.28)' : 'rgba(0,0,0,0.25)';
+      eCtx.lineWidth = 1;
+      eCtx.beginPath();
+      eCtx.moveTo(cx - rx * 0.85, cy - ry * 0.35);
+      eCtx.quadraticCurveTo(cx, cy - ry * 1.45, cx + rx * 0.85, cy - ry * 0.35);
+      eCtx.stroke();
+
+      eCtx.beginPath();
+      eCtx.moveTo(cx - rx * 0.8, cy + ry * 0.4);
+      eCtx.quadraticCurveTo(cx, cy + ry * 1.35, cx + rx * 0.8, cy + ry * 0.4);
+      eCtx.stroke();
+
+      eCtx.save();
+      eCtx.beginPath();
+      eCtx.moveTo(cx - rx, cy);
+      eCtx.bezierCurveTo(cx - rx * 0.45, cy - ry * 1.3, cx + rx * 0.45, cy - ry * 1.3, cx + rx, cy);
+      eCtx.bezierCurveTo(cx + rx * 0.45, cy + ry * 1.3, cx - rx * 0.45, cy + ry * 1.3, cx - rx, cy);
+      eCtx.closePath();
+
+      eCtx.fillStyle = scleraFill;
+      eCtx.fill();
+      eCtx.clip();
+
+      eCtx.fillStyle = 'rgba(180, 0, 0, 0.25)';
+      eCtx.beginPath();
+      eCtx.arc(cx - rx + 6, cy, 11, 0, Math.PI * 2);
+      eCtx.fill();
+
+      eCtx.strokeStyle = 'rgba(210, 0, 0, 0.72)';
+      eCtx.lineWidth = 0.85;
+      for (let v of eyeVeins) {
+        const startX = cx + Math.cos(v.startAngle) * (rx * 0.92);
+        const startY = cy + Math.sin(v.startAngle) * (ry * 0.75);
+        eCtx.beginPath();
+        eCtx.moveTo(startX, startY);
+        for (let step = 1; step <= 3; step++) {
+          const t = step / 3;
+          const px = startX + (cx + twitchX - startX) * (t * 0.55);
+          const py = startY + (cy + twitchY - startY) * (t * 0.55) + v.jitter[step - 1];
+          eCtx.lineTo(px, py);
+        }
+        eCtx.stroke();
+      }
+
+      const ix = cx + twitchX;
+      const iy = cy + twitchY;
+      const irisR = ry * 0.86;
+
+      const irisGrad = eCtx.createRadialGradient(ix, iy, irisR * 0.25, ix, iy, irisR);
+      irisGrad.addColorStop(0, '#4a0000');
+      irisGrad.addColorStop(0.65, '#b80000');
+      irisGrad.addColorStop(1, '#1a0000');
+
+      eCtx.fillStyle = irisGrad;
+      eCtx.beginPath();
+      eCtx.arc(ix, iy, irisR, 0, Math.PI * 2);
+      eCtx.fill();
+
+      eCtx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+      eCtx.lineWidth = 0.7;
+      for (let a = 0; a < Math.PI * 2; a += Math.PI / 14) {
+        eCtx.beginPath();
+        eCtx.moveTo(ix + Math.cos(a) * (irisR * 0.35), iy + Math.sin(a) * (irisR * 0.35));
+        eCtx.lineTo(ix + Math.cos(a) * (irisR * 0.95), iy + Math.sin(a) * (irisR * 0.95));
+        eCtx.stroke();
+      }
+
+      eCtx.fillStyle = '#000000';
+      eCtx.beginPath();
+      eCtx.arc(ix, iy, irisR * 0.44, 0, Math.PI * 2);
+      eCtx.fill();
+
+      eCtx.fillStyle = '#ffffff';
+      eCtx.beginPath();
+      eCtx.arc(ix - irisR * 0.32, iy - irisR * 0.32, 2.3, 0, Math.PI * 2);
+      eCtx.fill();
+
+      eCtx.fillStyle = 'rgba(0, 0, 0, 0.22)';
+      eCtx.fillRect(cx - rx, cy - ry * 1.4, rx * 2, ry * 0.65);
+
+      eCtx.restore();
+
+      eCtx.strokeStyle = primaryStroke;
+      eCtx.lineWidth = 2;
+      eCtx.beginPath();
+      eCtx.moveTo(cx - rx, cy);
+      eCtx.bezierCurveTo(cx - rx * 0.45, cy - ry * 1.3, cx + rx * 0.45, cy - ry * 1.3, cx + rx, cy);
+      eCtx.bezierCurveTo(cx + rx * 0.45, cy + ry * 1.3, cx - rx * 0.45, cy + ry * 1.3, cx - rx, cy);
+      eCtx.closePath();
+      eCtx.stroke();
+    }
+
+    renderAnatomicalEye(document.getElementById('eyeCanvas'), false, 0, 0);
+    renderAnatomicalEye(document.getElementById('jumpEyeCanvas'), true, 0, 0);
+
+    let eyeAnimInterval = null;
 
     function triggerWarningScreen() {
       initAudio();
-      playTone(500, 0.05, 'square', 0.08);
+      playOminousThud(85, 0.45);
       document.getElementById('intro-screen').style.display = 'none';
       document.getElementById('warning-screen').style.display = 'flex';
       startStaticNoise();
 
+      eyeAnimInterval = setInterval(() => {
+        const tx = (Math.random() - 0.5) * 4;
+        const ty = (Math.random() - 0.5) * 2.5;
+        renderAnatomicalEye(document.getElementById('eyeCanvas'), false, tx, ty);
+      }, 140);
+
       let timeLeft = 6;
       const timerDisplay = document.getElementById('countdown-timer');
-      
+
       const countdownInterval = setInterval(() => {
         timeLeft--;
         if (timeLeft > 0) {
           timerDisplay.textContent = 'initializing facility in ' + timeLeft + 's...';
         } else {
           clearInterval(countdownInterval);
+          clearInterval(eyeAnimInterval);
           stopStaticNoise();
           document.getElementById('warning-screen').style.display = 'none';
-          initLevel(1);
-          loop();
+          
+          // Start Introduction 1 MP4 sequence
+          initIntroSequence1();
         }
       }, 1000);
     }
 
-    // Game State
-    let level = 1;
-    let gameState = 'STOPPED'; // Started only after warning finishes
-    let frame = 0;
+    // --- EXACT 40-SECOND INTRODUCTION 1 WITH SEAMLESS STATIC TRANSITION ---
+    let introTimer = null;
 
-    // Input state
+    function initIntroSequence1() {
+      statusBar.textContent = 'INTRO // 01';
+      surveillanceVideo.src = 'images/introduction1.mp4';
+      surveillanceVideo.load();
+      surveillanceVideo.muted = false;
+      surveillanceVideo.style.display = 'block';
+      surveillanceVideo.play().catch(e => {});
+
+      let secondsElapsed = 0;
+      if (introTimer) clearInterval(introTimer);
+
+      introTimer = setInterval(() => {
+        secondsElapsed++;
+        // EXACTLY AT 40 SECONDS: Trigger broadcast static transition into Intro 2
+        if (secondsElapsed >= 40) {
+          clearInterval(introTimer);
+          triggerBroadcastStaticTransition();
+        }
+      }, 1000);
+    }
+
+    function triggerBroadcastStaticTransition() {
+      playLoudStaticTransition();
+      document.getElementById('jumpEyeCanvas').style.display = 'block';
+      overlayMsg.textContent = 'broadcast interruption';
+      overlaySub.textContent = 'switching archive feed...';
+      overlay.style.display = 'flex';
+
+      let scareFrames = 0;
+      const scareInterval = setInterval(() => {
+        scareFrames++;
+        const tx = (Math.random() - 0.5) * 8;
+        const ty = (Math.random() - 0.5) * 5;
+        renderAnatomicalEye(document.getElementById('jumpEyeCanvas'), true, tx, ty);
+        if (scareFrames > 25) {
+          clearInterval(scareInterval);
+        }
+      }, 80);
+
+      setTimeout(() => {
+        clearInterval(scareInterval);
+        overlay.style.display = 'none';
+        initIntroSequence2();
+      }, 2600);
+    }
+
+    function initIntroSequence2() {
+      statusBar.textContent = 'INTRO // 02';
+      surveillanceVideo.src = 'images/Introduction2.mp4';
+      surveillanceVideo.load();
+      surveillanceVideo.muted = false;
+      surveillanceVideo.style.display = 'block';
+      surveillanceVideo.play().catch(e => {});
+
+      // When Introduction 2 finishes playing naturally, start the game at Level 1
+      surveillanceVideo.onended = () => {
+        surveillanceVideo.onended = null;
+        surveillanceVideo.pause();
+        surveillanceVideo.style.display = 'none';
+        cameraSwitcher.style.display = 'block';
+        switchCamera('images/camera1.mp4', 1);
+        initLevel(1);
+        loop();
+      };
+
+      // Fallback timer in case onended doesn't fire on certain browsers
+      setTimeout(() => {
+        if (surveillanceVideo.src.includes('Introduction2.mp4') && gameState === 'STOPPED') {
+          surveillanceVideo.onended = null;
+          surveillanceVideo.pause();
+          surveillanceVideo.style.display = 'none';
+          cameraSwitcher.style.display = 'block';
+          switchCamera('images/camera1.mp4', 1);
+          initLevel(1);
+          loop();
+        }
+      }, 25000);
+    }
+
+    // --- LEVEL 4 ATTENDANCE DRAWING LOGIC (40s Timer) ---
+    const sketchCanvas = document.getElementById('sketchCanvas');
+    const sCtx = sketchCanvas.getContext('2d');
+    let isDrawing = false;
+    let drawnPixelsCount = 0;
+    let attendanceStage = 1; 
+    let attendanceTimer = 40;
+    let attendanceInterval = null;
+
+    function resetSketch() {
+      sCtx.fillStyle = '#ffffff';
+      sCtx.fillRect(0, 0, sketchCanvas.width, sketchCanvas.height);
+      sCtx.strokeStyle = '#cccccc';
+      sCtx.lineWidth = 1;
+      sCtx.setLineDash([3, 3]);
+      sCtx.strokeRect(40, 20, 200, 110);
+      sCtx.setLineDash([]);
+      drawnPixelsCount = 0;
+    }
+
+    sketchCanvas.addEventListener('pointerdown', (e) => {
+      isDrawing = true;
+      const rect = sketchCanvas.getBoundingClientRect();
+      sCtx.beginPath();
+      sCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+    });
+
+    sketchCanvas.addEventListener('pointermove', (e) => {
+      if (!isDrawing) return;
+      const rect = sketchCanvas.getBoundingClientRect();
+      sCtx.strokeStyle = '#000000';
+      sCtx.lineWidth = 3;
+      sCtx.lineCap = 'round';
+      sCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+      sCtx.stroke();
+      drawnPixelsCount++;
+    });
+
+    window.addEventListener('pointerup', () => {
+      isDrawing = false;
+    });
+
+    function startAttendanceTimer() {
+      if (attendanceInterval) clearInterval(attendanceInterval);
+      attendanceTimer = 40;
+      document.getElementById('draw-timer-display').textContent = 'time left: ' + attendanceTimer + 's';
+
+      attendanceInterval = setInterval(() => {
+        if (gameState !== 'PLAYING') return;
+        attendanceTimer--;
+        document.getElementById('draw-timer-display').textContent = 'time left: ' + attendanceTimer + 's';
+        if (attendanceTimer <= 0) {
+          clearInterval(attendanceInterval);
+          triggerCaught();
+        }
+      }, 1000);
+    }
+
+    window.submitAttendanceDrawing = function() {
+      initAudio();
+      playOminousThud(120, 0.3);
+
+      let score = Math.min(10, Math.max(1, (drawnPixelsCount / 25) + (Math.random() * 2)));
+
+      if (score < 4.0) {
+        if (attendanceInterval) clearInterval(attendanceInterval);
+        triggerCaught();
+      } else {
+        attendanceStage++;
+        if (attendanceStage === 2) {
+          document.getElementById('draw-prompt-desc').textContent = 'draw an angry family';
+          resetSketch();
+          startAttendanceTimer();
+        } else if (attendanceStage === 3) {
+          document.getElementById('draw-prompt-desc').textContent = 'draw a dead family';
+          resetSketch();
+          startAttendanceTimer();
+        } else {
+          if (attendanceInterval) clearInterval(attendanceInterval);
+          drawingContainer.style.display = 'none';
+          
+          storyOverlay.style.display = 'flex';
+          statusBar.textContent = 'DIALOGUE';
+          promptText.textContent = '';
+          controlsHint.textContent = '';
+        }
+      }
+    };
+
+    window.proceedToFinalEscape = function() {
+      storyOverlay.style.display = 'none';
+      initLevel(6);
+    };
+
+    // Game State & 25-Second Timer
+    let level = 1;
+    let gameState = 'STOPPED';
+    let frame = 0;
+    let levelTimeLeft = 25;
+    let levelTimerInterval = null;
+
     const keys = {};
     let isPointerDown = false;
     let pointerX = W / 2;
     let pointerY = H / 2;
 
-    // Level 1: Phone breaking state
+    // Level 1 variables (Phone break)
     let phoneHits = 0;
     const phoneMaxHits = 14;
     let phoneShake = 0;
     let cracks = [];
     let shards = [];
 
-    // Level 2 & 3: Player Dot
+    // Level 2 variables (Audio wave intercept)
+    let waveAmp = 20;
+    let targetAmp = 50;
+    let waveLockFrames = 0;
+    const requiredLockFrames = 85;
+    let level2Transitioning = false;
+
+    // Level 5 & 6 variables (Flashes & Eye Evasion)
     const player = {
       x: W / 2,
       y: H * 0.82,
@@ -328,32 +906,56 @@
       speed: 3.4
     };
 
-    // Level 2: Paparazzi Flashes
     let flashes = [];
-
-    // Level 3: Surveillance Eye / Laser Sweep
     let sweepTimer = 0;
     let sweepState = 'SAFE'; 
     let lastPlayerX = 0;
     let lastPlayerY = 0;
 
+    function startLevelTimer() {
+      if (levelTimerInterval) clearInterval(levelTimerInterval);
+      levelTimeLeft = 25;
+      levelTimerInterval = setInterval(() => {
+        if (gameState !== 'PLAYING') return;
+        levelTimeLeft--;
+        if (levelTimeLeft <= 0) {
+          clearInterval(levelTimerInterval);
+          triggerCaught();
+        }
+      }, 1000);
+    }
+
     function initLevel(lvl) {
       level = lvl;
       gameState = 'PLAYING';
       overlay.style.display = 'none';
+      drawingContainer.style.display = 'none';
+      storyOverlay.style.display = 'none';
       frame = 0;
+      stopVoiceChatter();
+      startLevelTimer();
 
       if (level === 1) {
-        statusBar.textContent = '1 / 3';
+        statusBar.textContent = '1 / 6 [25s]';
         promptText.textContent = 'disconnect — break the phone';
         controlsHint.textContent = '[tap repeatedly or press space]';
         phoneHits = 0;
         phoneShake = 0;
         cracks = [];
         shards = [];
-      } 
+      }
       else if (level === 2) {
-        statusBar.textContent = '2 / 3';
+        statusBar.textContent = '2 / 6 [25s]';
+        promptText.textContent = 'intercept transmission — match the red audio wave';
+        controlsHint.textContent = '[tap repeatedly / hold space to amplify wave & lock voice signal]';
+        waveAmp = 20;
+        targetAmp = 50;
+        waveLockFrames = 0;
+        level2Transitioning = false;
+        startVoiceChatter();
+      }
+      else if (level === 5) {
+        statusBar.textContent = '5 / 6 [25s]';
         promptText.textContent = 'slip past the flashes — reach the top';
         controlsHint.textContent = '[hold / drag or use arrow keys]';
         player.x = W / 2;
@@ -370,9 +972,20 @@
             pulseOffset: Math.random() * Math.PI * 2
           });
         }
-      } 
-      else if (level === 3) {
-        statusBar.textContent = '3 / 3';
+      }
+      else if (level === 4) {
+        statusBar.textContent = '4 / 6 [attendance]';
+        promptText.textContent = 'prodigy attendance — fake home logs (40s per drawing)';
+        controlsHint.textContent = '[draw inside box and click submit for attendance]';
+        drawingContainer.style.display = 'block';
+        attendanceStage = 1;
+        document.getElementById('draw-prompt-title').textContent = 'ATTENDANCE SUBMISSION [PRODIGY PROTOCOL]';
+        document.getElementById('draw-prompt-desc').textContent = 'draw a happy family';
+        resetSketch();
+        startAttendanceTimer();
+      }
+      else if (level === 6) {
+        statusBar.textContent = '6 / 6 [25s]';
         promptText.textContent = 'leave the world — freeze when the eye turns red';
         controlsHint.textContent = '[hold / up arrow to walk into the white — stop when watched]';
         player.x = W / 2;
@@ -387,29 +1000,60 @@
     function triggerCaught() {
       if (gameState !== 'PLAYING') return;
       gameState = 'CAUGHT';
+      stopVoiceChatter();
+      if (levelTimerInterval) clearInterval(levelTimerInterval);
+      if (attendanceInterval) clearInterval(attendanceInterval);
+      drawingContainer.style.display = 'none';
+      storyOverlay.style.display = 'none';
+      cameraSwitcher.style.display = 'none';
+      surveillanceVideo.pause();
+
+      playLoudStaticTransition();
+
       overlayMsg.textContent = 'they found you';
-      overlaySub.textContent = '';
+      overlaySub.textContent = 'subject trace confirmed. wiping memory sector...';
+      document.getElementById('jumpEyeCanvas').style.display = 'none';
       overlay.style.display = 'flex';
 
       setTimeout(() => {
+        overlay.style.display = 'none';
+        cameraSwitcher.style.display = 'block';
+        surveillanceVideo.play().catch(e => {});
         initLevel(1);
-      }, 1700);
+      }, 2400);
     }
 
     function triggerWin() {
       gameState = 'WON';
+      stopVoiceChatter();
+      if (levelTimerInterval) clearInterval(levelTimerInterval);
       statusBar.textContent = '0 / 0';
       promptText.textContent = '';
       controlsHint.textContent = '';
+      cameraSwitcher.style.display = 'none';
+      surveillanceVideo.pause();
+      playOminousThud(110, 0.9);
+      document.getElementById('jumpEyeCanvas').style.display = 'none';
       overlayMsg.textContent = 'you are free';
-      overlaySub.innerHTML = '<a href="index.html">return</a>';
+      overlaySub.innerHTML = '<a href="index.html" style="color: #0000ee;">return</a>';
       overlay.style.display = 'flex';
     }
 
+    function handleActionInput() {
+      if (gameState !== 'PLAYING') return;
+      if (level === 1) {
+        hitPhone();
+      } else if (level === 2 && !level2Transitioning) {
+        waveAmp = Math.min(82, waveAmp + 11.5);
+        playOminousThud(95, 0.08);
+      }
+    }
+
     function hitPhone() {
-      if (level !== 1 || gameState !== 'PLAYING') return;
+      if (phoneHits >= phoneMaxHits) return;
       phoneHits++;
       phoneShake = 12;
+      playOminousThud(80 - phoneHits * 3, 0.15);
 
       const startX = (Math.random() - 0.5) * 60;
       const startY = (Math.random() - 0.5) * 110;
@@ -424,6 +1068,7 @@
       cracks.push(pts);
 
       if (phoneHits >= phoneMaxHits) {
+        playOminousThud(38, 0.55);
         for (let i = 0; i < 24; i++) {
           shards.push({
             x: W / 2 + (Math.random() - 0.5) * 70,
@@ -436,16 +1081,15 @@
         promptText.textContent = 'signal lost.';
         setTimeout(() => {
           initLevel(2);
-        }, 850);
+        }, 900);
       }
     }
 
-    // Event Listeners
     window.addEventListener('keydown', (e) => {
       keys[e.code] = true;
       if (e.code === 'Space') {
         e.preventDefault();
-        if (level === 1) hitPhone();
+        handleActionInput();
       }
     });
 
@@ -457,7 +1101,7 @@
       isPointerDown = true;
       pointerX = e.clientX;
       pointerY = e.clientY;
-      if (level === 1) hitPhone();
+      handleActionInput();
     });
 
     canvas.addEventListener('pointermove', (e) => {
@@ -471,7 +1115,6 @@
       isPointerDown = false;
     });
 
-    // Update Loop
     function update() {
       if (gameState !== 'PLAYING') return;
       frame++;
@@ -486,6 +1129,34 @@
       }
 
       else if (level === 2) {
+        if (level2Transitioning) return;
+        targetAmp = 50 + Math.sin(frame * 0.018) * 12;
+
+        if (isPointerDown || keys['Space']) {
+          waveAmp += 0.65;
+        } else {
+          waveAmp -= 0.35;
+        }
+        waveAmp = Math.max(10, Math.min(82, waveAmp));
+
+        const diff = Math.abs(waveAmp - targetAmp);
+        if (diff <= 12.0) {
+          waveLockFrames++;
+          if (waveLockFrames >= requiredLockFrames) {
+            level2Transitioning = true;
+            stopVoiceChatter();
+            playOminousThud(45, 0.5);
+            promptText.textContent = 'transmission decoded — sector unlocked';
+            setTimeout(() => {
+              initLevel(5);
+            }, 850);
+          }
+        } else {
+          waveLockFrames = Math.max(0, waveLockFrames - 1.0);
+        }
+      }
+
+      else if (level === 5) {
         let dx = 0;
         let dy = 0;
         if (keys['ArrowUp'] || keys['KeyW']) dy -= 1;
@@ -527,20 +1198,22 @@
         }
 
         if (player.y <= 78) {
-          initLevel(3);
+          initLevel(4);
         }
       }
 
-      else if (level === 3) {
+      else if (level === 6) {
         lastPlayerX = player.x;
         lastPlayerY = player.y;
 
         sweepTimer++;
         if (sweepState === 'SAFE' && sweepTimer > 110) {
           sweepState = 'WARNING';
+          playOminousThud(55, 0.2);
           sweepTimer = 0;
         } else if (sweepState === 'WARNING' && sweepTimer > 55) {
           sweepState = 'SCANNING';
+          playOminousThud(75, 0.25);
           sweepTimer = 0;
         } else if (sweepState === 'SCANNING' && sweepTimer > 85) {
           sweepState = 'SAFE';
@@ -577,9 +1250,9 @@
       }
     }
 
-    // Draw Loop
     function draw() {
       ctx.clearRect(0, 0, W, H);
+      statusBar.textContent = level + ' / 6 [' + levelTimeLeft + 's]';
 
       if (level === 1) {
         const cx = W / 2 + (Math.random() - 0.5) * phoneShake;
@@ -622,6 +1295,94 @@
       }
 
       else if (level === 2) {
+        const boxW = Math.min(480, W * 0.88);
+        const boxH = 210;
+        const bx = (W - boxW) / 2;
+        const by = (H - boxH) / 2 - 10;
+        const midY = by + boxH / 2;
+
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(bx, by, boxW, boxH);
+
+        ctx.strokeStyle = '#e2e2e2';
+        ctx.lineWidth = 1;
+        for (let gx = bx + 30; gx < bx + boxW; gx += 30) {
+          ctx.beginPath();
+          ctx.moveTo(gx, by);
+          ctx.lineTo(gx, by + boxH);
+          ctx.stroke();
+        }
+        for (let gy = by + 30; gy < by + boxH; gy += 30) {
+          ctx.beginPath();
+          ctx.moveTo(bx, gy);
+          ctx.lineTo(bx + boxW, gy);
+          ctx.stroke();
+        }
+
+        ctx.strokeStyle = '#999999';
+        ctx.beginPath();
+        ctx.moveTo(bx, midY);
+        ctx.lineTo(bx + boxW, midY);
+        ctx.stroke();
+
+        ctx.save();
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        for (let x = 0; x <= boxW; x += 3) {
+          const normX = (x / boxW) * Math.PI * 6;
+          const env = Math.sin((x / boxW) * Math.PI);
+          const y = midY + Math.sin(normX + frame * 0.08) * targetAmp * env;
+          if (x === 0) ctx.moveTo(bx + x, y);
+          else ctx.lineTo(bx + x, y);
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        const diff = Math.abs(waveAmp - targetAmp);
+        const isLocked = diff <= 12.0;
+        const staticJitter = isLocked ? 1.2 : Math.min(14, diff * 0.3);
+
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let x = 0; x <= boxW; x += 2) {
+          const normX = (x / boxW) * Math.PI * 6;
+          const env = Math.sin((x / boxW) * Math.PI);
+          const voiceSpike = Math.sin(x * 0.45 - frame * 0.35) * (isLocked ? 4 : 1.5) * env;
+          const noise = (Math.random() - 0.5) * staticJitter * env;
+          const y = midY + Math.sin(normX + frame * 0.08) * waveAmp * env + voiceSpike + noise;
+          if (x === 0) ctx.moveTo(bx + x, y);
+          else ctx.lineTo(bx + x, y);
+        }
+        ctx.stroke();
+
+        ctx.font = '11px "Times New Roman"';
+        ctx.fillStyle = '#000000';
+        ctx.textAlign = 'left';
+        ctx.fillText('CH_01 // VOICE INTERCEPT OSCILLOSCOPE', bx + 8, by + 16);
+
+        ctx.textAlign = 'right';
+        ctx.fillStyle = isLocked ? '#ff0000' : '#555555';
+        ctx.fillText(isLocked ? 'SIGNAL LOCKED — DECODING...' : 'UNALIGNED STATIC', bx + boxW - 8, by + 16);
+
+        const lockPct = Math.min(1, waveLockFrames / requiredLockFrames);
+        const barY = by + boxH + 14;
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(bx, barY, boxW, 10);
+        ctx.fillStyle = isLocked ? '#ff0000' : '#000000';
+        ctx.fillRect(bx, barY, boxW * lockPct, 10);
+
+        ctx.font = '12px "Times New Roman"';
+        ctx.fillStyle = '#000000';
+        ctx.textAlign = 'center';
+        ctx.fillText('voice lock: ' + Math.floor(lockPct * 100) + '%', W / 2, barY + 26);
+      }
+
+      else if (level === 5) {
         ctx.strokeStyle = '#000000';
         ctx.setLineDash([4, 4]);
         ctx.beginPath();
@@ -658,7 +1419,7 @@
         ctx.fill();
       }
 
-      else if (level === 3) {
+      else if (level === 6) {
         ctx.strokeStyle = '#000000';
         ctx.beginPath();
         ctx.moveTo(0, 70);
