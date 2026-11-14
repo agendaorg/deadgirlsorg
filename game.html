@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>play</title>
+  <style>
+    /* Raw 2003 web default aesthetic */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #ffffff;
+      color: #000000;
+      font-family: "Times New Roman", Times, serif;
+      overflow: hidden;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .header-nav {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 14px;
+      z-index: 10;
+    }
+
+    a {
+      color: #0000ee;
+      text-decoration: underline;
+    }
+
+    a:visited {
+      color: #0000ee;
+    }
+
+    a:active {
+      color: #ff0000;
+    }
+
+    #status-bar {
+      position: absolute;
+      top: 10px;
+      right: 12px;
+      font-size: 14px;
+      color: #000000;
+      z-index: 10;
+    }
+
+    #prompt-text {
+      position: absolute;
+      top: 42px;
+      width: 100%;
+      text-align: center;
+      font-size: 15px;
+      color: #000000;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    #controls-hint {
+      position: absolute;
+      bottom: 14px;
+      width: 100%;
+      text-align: center;
+      font-size: 12px;
+      color: #555555;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+
+    /* Intro & Warning Screen Overlays */
+    .screen-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: #ffffff;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 24px;
+      box-sizing: border-box;
+    }
+
+    .screen-text {
+      max-width: 540px;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 24px;
+      color: #111111;
+    }
+
+    .classic-btn {
+      background: #efefef;
+      border: 2px outset #ffffff;
+      font-family: "Times New Roman", Times, serif;
+      font-size: 13px;
+      padding: 6px 16px;
+      cursor: pointer;
+    }
+
+    .classic-btn:active {
+      border-style: inset;
+    }
+
+    /* Full screen overlay for "they found you" & ending */
+    #overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background-color: #ffffff;
+      z-index: 20;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 20px;
+    }
+
+    #overlay-message {
+      font-size: 18px;
+      color: #000000;
+      margin-bottom: 14px;
+    }
+
+    #overlay-sub {
+      font-size: 13px;
+      color: #555555;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Screen 1: Lore / Intro Screen -->
+  <div id="intro-screen" class="screen-overlay">
+    <div class="screen-text">
+      You are locked inside a notorious underground psychological conditioning facility built for elite pop stars and public figures in 2003. The facility tests your mental compliance by forcing you to watch raw, unedited surveillance video clips streamed directly from an internal server folder (images/), where hidden psychological triggers, flashing lights, and distorted celebrity interviews play out.<br><br>
+      To survive the evaluation and proceed to the physical extraction levels, you must watch the live stream footage without panicking, interact with the testing interface, and survive the facility's brutal mental tests.
+    </div>
+    <button class="classic-btn" onclick="triggerWarningScreen()">[continue]</button>
+  </div>
+
+  <!-- Screen 2: Timed 6-Second Warning Screen with Eerie Eye & Static Sound -->
+  <div id="warning-screen" class="screen-overlay" style="display: none;">
+    <canvas id="eyeCanvas" width="120" height="70" style="margin-bottom: 20px;"></canvas>
+    <div class="screen-text" style="font-weight: bold; color: #ff0000; text-transform: uppercase; letter-spacing: 1px;">
+      WARNING: UNAUTHORIZED SUBJECT TRACE ACTIVE.<br>ALL COMPLIANCE FAILURES ARE PERMANENTLY LOGGED.<br><br>
+      <span id="countdown-timer" style="font-size: 12px; color: #555555;">initializing facility in 6s...</span>
+    </div>
+  </div>
+
+  <div class="header-nav">
+    <a href="index.html">&lt; back</a>
+  </div>
+
+  <div id="status-bar">1 / 3</div>
+  <div id="prompt-text">break the phone</div>
+  <div id="controls-hint">[tap / spacebar]</div>
+
+  <canvas id="gameCanvas"></canvas>
+
+  <div id="overlay">
+    <div id="overlay-message">they found you</div>
+    <div id="overlay-sub"></div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const statusBar = document.getElementById('status-bar');
+    const promptText = document.getElementById('prompt-text');
+    const controlsHint = document.getElementById('controls-hint');
+    const overlay = document.getElementById('overlay');
+    const overlayMsg = document.getElementById('overlay-message');
+    const overlaySub = document.getElementById('overlay-sub');
+
+    let W = window.innerWidth;
+    let H = window.innerHeight;
+
+    function resize() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      canvas.width = W;
+      canvas.height = H;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    // --- AUDIO & WARNING SCREEN LOGIC ---
+    let audioCtx = null;
+    let staticNoiseNode = null;
+    let staticGainNode = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playTone(freq = 440, dur = 0.05, type = 'square', vol = 0.05) {
+      try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + dur);
+      } catch(e) {}
+    }
+
+    function startStaticNoise() {
+      try {
+        initAudio();
+        if (staticNoiseNode) return;
+        const bufferSize = audioCtx.sampleRate * 2;
+        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          output[i] = (Math.random() * 2 - 1) * 0.3;
+        }
+        staticNoiseNode = audioCtx.createBufferSource();
+        staticNoiseNode.buffer = noiseBuffer;
+        staticNoiseNode.loop = true;
+
+        staticGainNode = audioCtx.createGain();
+        staticGainNode.gain.value = 0.1;
+
+        staticNoiseNode.connect(staticGainNode);
+        staticGainNode.connect(audioCtx.destination);
+        staticNoiseNode.start();
+      } catch(e) {}
+    }
+
+    function stopStaticNoise() {
+      try {
+        if (staticNoiseNode) {
+          staticNoiseNode.stop();
+          staticNoiseNode.disconnect();
+          staticNoiseNode = null;
+        }
+      } catch(e) {}
+    }
+
+    // Draw Eerie Eye on Warning Screen
+    const eyeCanvas = document.getElementById('eyeCanvas');
+    const eyeCtx = eyeCanvas.getContext('2d');
+    function drawWarningEye() {
+      eyeCtx.clearRect(0, 0, 120, 70);
+      eyeCtx.strokeStyle = '#000000';
+      eyeCtx.lineWidth = 1.5;
+      eyeCtx.beginPath();
+      eyeCtx.ellipse(60, 35, 50, 22, 0, 0, Math.PI * 2);
+      eyeCtx.stroke();
+      eyeCtx.beginPath();
+      eyeCtx.arc(60, 35, 9, 0, Math.PI * 2);
+      eyeCtx.fillStyle = '#ff0000';
+      eyeCtx.fill();
+    }
+    drawWarningEye();
+
+    function triggerWarningScreen() {
+      initAudio();
+      playTone(500, 0.05, 'square', 0.08);
+      document.getElementById('intro-screen').style.display = 'none';
+      document.getElementById('warning-screen').style.display = 'flex';
+      startStaticNoise();
+
+      let timeLeft = 6;
+      const timerDisplay = document.getElementById('countdown-timer');
+      
+      const countdownInterval = setInterval(() => {
+        timeLeft--;
+        if (timeLeft > 0) {
+          timerDisplay.textContent = 'initializing facility in ' + timeLeft + 's...';
+        } else {
+          clearInterval(countdownInterval);
+          stopStaticNoise();
+          document.getElementById('warning-screen').style.display = 'none';
+          initLevel(1);
+          loop();
+        }
+      }, 1000);
+    }
+
+    // Game State
+    let level = 1;
+    let gameState = 'STOPPED'; // Started only after warning finishes
+    let frame = 0;
+
+    // Input state
+    const keys = {};
+    let isPointerDown = false;
+    let pointerX = W / 2;
+    let pointerY = H / 2;
+
+    // Level 1: Phone breaking state
+    let phoneHits = 0;
+    const phoneMaxHits = 14;
+    let phoneShake = 0;
+    let cracks = [];
+    let shards = [];
+
+    // Level 2 & 3: Player Dot
+    const player = {
+      x: W / 2,
+      y: H * 0.82,
+      r: 5,
+      speed: 3.4
+    };
+
+    // Level 2: Paparazzi Flashes
+    let flashes = [];
+
+    // Level 3: Surveillance Eye / Laser Sweep
+    let sweepTimer = 0;
+    let sweepState = 'SAFE'; 
+    let lastPlayerX = 0;
+    let lastPlayerY = 0;
+
+    function initLevel(lvl) {
+      level = lvl;
+      gameState = 'PLAYING';
+      overlay.style.display = 'none';
+      frame = 0;
+
+      if (level === 1) {
+        statusBar.textContent = '1 / 3';
+        promptText.textContent = 'disconnect — break the phone';
+        controlsHint.textContent = '[tap repeatedly or press space]';
+        phoneHits = 0;
+        phoneShake = 0;
+        cracks = [];
+        shards = [];
+      } 
+      else if (level === 2) {
+        statusBar.textContent = '2 / 3';
+        promptText.textContent = 'slip past the flashes — reach the top';
+        controlsHint.textContent = '[hold / drag or use arrow keys]';
+        player.x = W / 2;
+        player.y = H - 70;
+        flashes = [];
+        const count = Math.max(5, Math.floor(W / 95));
+        for (let i = 0; i < count; i++) {
+          flashes.push({
+            x: Math.random() * (W - 80) + 40,
+            y: 120 + Math.random() * (H - 250),
+            r: 28 + Math.random() * 24,
+            vx: (Math.random() > 0.5 ? 1 : -1) * (1.2 + Math.random() * 1.8),
+            vy: (Math.random() - 0.5) * 1.2,
+            pulseOffset: Math.random() * Math.PI * 2
+          });
+        }
+      } 
+      else if (level === 3) {
+        statusBar.textContent = '3 / 3';
+        promptText.textContent = 'leave the world — freeze when the eye turns red';
+        controlsHint.textContent = '[hold / up arrow to walk into the white — stop when watched]';
+        player.x = W / 2;
+        player.y = H - 70;
+        lastPlayerX = player.x;
+        lastPlayerY = player.y;
+        sweepTimer = 0;
+        sweepState = 'SAFE';
+      }
+    }
+
+    function triggerCaught() {
+      if (gameState !== 'PLAYING') return;
+      gameState = 'CAUGHT';
+      overlayMsg.textContent = 'they found you';
+      overlaySub.textContent = '';
+      overlay.style.display = 'flex';
+
+      setTimeout(() => {
+        initLevel(1);
+      }, 1700);
+    }
+
+    function triggerWin() {
+      gameState = 'WON';
+      statusBar.textContent = '0 / 0';
+      promptText.textContent = '';
+      controlsHint.textContent = '';
+      overlayMsg.textContent = 'you are gone.';
+      overlaySub.innerHTML = '<a href="index.html">return</a>';
+      overlay.style.display = 'flex';
+    }
+
+    function hitPhone() {
+      if (level !== 1 || gameState !== 'PLAYING') return;
+      phoneHits++;
+      phoneShake = 12;
+
+      const startX = (Math.random() - 0.5) * 60;
+      const startY = (Math.random() - 0.5) * 110;
+      let pts = [{ x: startX, y: startY }];
+      for (let i = 0; i < 4; i++) {
+        const prev = pts[pts.length - 1];
+        pts.push({
+          x: prev.x + (Math.random() - 0.5) * 45,
+          y: prev.y + (Math.random() - 0.5) * 45
+        });
+      }
+      cracks.push(pts);
+
+      if (phoneHits >= phoneMaxHits) {
+        for (let i = 0; i < 24; i++) {
+          shards.push({
+            x: W / 2 + (Math.random() - 0.5) * 70,
+            y: H / 2 + (Math.random() - 0.5) * 130,
+            vx: (Math.random() - 0.5) * 9,
+            vy: (Math.random() - 0.5) * 9,
+            size: 3 + Math.random() * 7
+          });
+        }
+        promptText.textContent = 'signal lost.';
+        setTimeout(() => {
+          initLevel(2);
+        }, 850);
+      }
+    }
+
+    // Event Listeners
+    window.addEventListener('keydown', (e) => {
+      keys[e.code] = true;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        if (level === 1) hitPhone();
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      keys[e.code] = false;
+    });
+
+    canvas.addEventListener('pointerdown', (e) => {
+      isPointerDown = true;
+      pointerX = e.clientX;
+      pointerY = e.clientY;
+      if (level === 1) hitPhone();
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (isPointerDown) {
+        pointerX = e.clientX;
+        pointerY = e.clientY;
+      }
+    });
+
+    window.addEventListener('pointerup', () => {
+      isPointerDown = false;
+    });
+
+    // Update Loop
+    function update() {
+      if (gameState !== 'PLAYING') return;
+      frame++;
+
+      if (level === 1) {
+        if (phoneShake > 0) phoneShake *= 0.85;
+        shards.forEach(s => {
+          s.x += s.vx;
+          s.y += s.vy;
+          s.vy += 0.25;
+        });
+      }
+
+      else if (level === 2) {
+        let dx = 0;
+        let dy = 0;
+        if (keys['ArrowUp'] || keys['KeyW']) dy -= 1;
+        if (keys['ArrowDown'] || keys['KeyS']) dy += 1;
+        if (keys['ArrowLeft'] || keys['KeyA']) dx -= 1;
+        if (keys['ArrowRight'] || keys['KeyD']) dx += 1;
+
+        if (isPointerDown) {
+          const angle = Math.atan2(pointerY - player.y, pointerX - player.x);
+          const dist = Math.hypot(pointerX - player.x, pointerY - player.y);
+          if (dist > 6) {
+            dx = Math.cos(angle);
+            dy = Math.sin(angle);
+          }
+        } else if (dx !== 0 || dy !== 0) {
+          const len = Math.hypot(dx, dy);
+          dx /= len;
+          dy /= len;
+        }
+
+        player.x += dx * player.speed;
+        player.y += dy * player.speed;
+
+        player.x = Math.max(15, Math.min(W - 15, player.x));
+        player.y = Math.max(60, Math.min(H - 20, player.y));
+
+        for (let f of flashes) {
+          f.x += f.vx;
+          f.y += f.vy;
+          if (f.x < f.r || f.x > W - f.r) f.vx *= -1;
+          if (f.y < 100 || f.y > H - 110) f.vy *= -1;
+
+          const activeRadius = f.r + Math.sin(frame * 0.08 + f.pulseOffset) * 8;
+          const dist = Math.hypot(player.x - f.x, player.y - f.y);
+          if (dist < activeRadius + player.r - 2) {
+            triggerCaught();
+            return;
+          }
+        }
+
+        if (player.y <= 78) {
+          initLevel(3);
+        }
+      }
+
+      else if (level === 3) {
+        lastPlayerX = player.x;
+        lastPlayerY = player.y;
+
+        sweepTimer++;
+        if (sweepState === 'SAFE' && sweepTimer > 110) {
+          sweepState = 'WARNING';
+          sweepTimer = 0;
+        } else if (sweepState === 'WARNING' && sweepTimer > 55) {
+          sweepState = 'SCANNING';
+          sweepTimer = 0;
+        } else if (sweepState === 'SCANNING' && sweepTimer > 85) {
+          sweepState = 'SAFE';
+          sweepTimer = 0;
+        }
+
+        let moving = false;
+        if (keys['ArrowUp'] || keys['KeyW'] || keys['Space'] || isPointerDown) {
+          player.y -= 2.1;
+          moving = true;
+        }
+        if (keys['ArrowLeft'] || keys['KeyA']) {
+          player.x -= 2.0;
+          moving = true;
+        }
+        if (keys['ArrowRight'] || keys['KeyD']) {
+          player.x += 2.0;
+          moving = true;
+        }
+
+        player.x = Math.max(20, Math.min(W - 20, player.x));
+
+        if (sweepState === 'SCANNING') {
+          const movedDist = Math.hypot(player.x - lastPlayerX, player.y - lastPlayerY);
+          if (moving || movedDist > 0.4) {
+            triggerCaught();
+            return;
+          }
+        }
+
+        if (player.y <= 68) {
+          triggerWin();
+        }
+      }
+    }
+
+    // Draw Loop
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+
+      if (level === 1) {
+        const cx = W / 2 + (Math.random() - 0.5) * phoneShake;
+        const cy = H / 2 + (Math.random() - 0.5) * phoneShake;
+
+        if (phoneHits < phoneMaxHits) {
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(cx - 42, cy - 82, 84, 164);
+          ctx.strokeRect(cx - 34, cy - 66, 68, 102);
+          ctx.beginPath();
+          ctx.moveTo(cx - 10, cy - 74);
+          ctx.lineTo(cx + 10, cy - 74);
+          ctx.stroke();
+          ctx.strokeRect(cx - 8, cy + 48, 16, 16);
+
+          if (frame % 30 < 15) {
+            ctx.font = '12px "Times New Roman"';
+            ctx.fillStyle = '#000000';
+            ctx.textAlign = 'center';
+            ctx.fillText('incoming call...', cx, cy - 96);
+          }
+
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 1;
+          for (let line of cracks) {
+            ctx.beginPath();
+            ctx.moveTo(cx + line[0].x, cy - 15 + line[0].y);
+            for (let i = 1; i < line.length; i++) {
+              ctx.lineTo(cx + line[i].x, cy - 15 + line[i].y);
+            }
+            ctx.stroke();
+          }
+        } else {
+          ctx.fillStyle = '#000000';
+          for (let s of shards) {
+            ctx.fillRect(s.x, s.y, s.size, 1.5);
+          }
+        }
+      }
+
+      else if (level === 2) {
+        ctx.strokeStyle = '#000000';
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(0, 75);
+        ctx.lineTo(W, 75);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.font = '12px "Times New Roman"';
+        ctx.fillStyle = '#000000';
+        ctx.textAlign = 'center';
+        ctx.fillText('exit', W / 2, 68);
+
+        for (let f of flashes) {
+          const activeRadius = f.r + Math.sin(frame * 0.08 + f.pulseOffset) * 8;
+          ctx.beginPath();
+          ctx.arc(f.x, f.y, activeRadius, 0, Math.PI * 2);
+          ctx.strokeStyle = '#ff0000';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          ctx.fillStyle = 'rgba(255, 0, 0, 0.08)';
+          ctx.fill();
+
+          ctx.fillStyle = '#ff0000';
+          ctx.font = '10px "Times New Roman"';
+          ctx.textAlign = 'center';
+          ctx.fillText('flash', f.x, f.y + 3);
+        }
+
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, player.r, 0, Math.PI * 2);
+        ctx.fillStyle = '#000000';
+        ctx.fill();
+      }
+
+      else if (level === 3) {
+        ctx.strokeStyle = '#000000';
+        ctx.beginPath();
+        ctx.moveTo(0, 70);
+        ctx.lineTo(W, 70);
+        ctx.stroke();
+
+        ctx.font = '12px "Times New Roman"';
+        ctx.fillStyle = '#000000';
+        ctx.textAlign = 'center';
+        ctx.fillText('nowhere', W / 2, 62);
+
+        const eyeX = W / 2;
+        const eyeY = 145;
+        ctx.lineWidth = 1.5;
+
+        if (sweepState === 'SAFE') {
+          ctx.strokeStyle = '#000000';
+          ctx.beginPath();
+          ctx.moveTo(eyeX - 24, eyeY);
+          ctx.lineTo(eyeX + 24, eyeY);
+          ctx.stroke();
+        } else if (sweepState === 'WARNING') {
+          ctx.strokeStyle = '#000000';
+          ctx.beginPath();
+          ctx.ellipse(eyeX, eyeY, 24, 10, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(eyeX, eyeY, 4, 0, Math.PI * 2);
+          ctx.fillStyle = '#000000';
+          ctx.fill();
+        } else if (sweepState === 'SCANNING') {
+          ctx.fillStyle = 'rgba(255, 0, 0, 0.09)';
+          ctx.beginPath();
+          ctx.moveTo(eyeX, eyeY);
+          ctx.lineTo(0, H);
+          ctx.lineTo(W, H);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.strokeStyle = '#ff0000';
+          ctx.beginPath();
+          ctx.ellipse(eyeX, eyeY, 26, 13, 0, 0, Math.PI * 2);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.arc(eyeX, eyeY, 6, 0, Math.PI * 2);
+          ctx.fillStyle = '#ff0000';
+          ctx.fill();
+        }
+
+        ctx.beginPath();
+        ctx.arc(player.x, player.y, player.r, 0, Math.PI * 2);
+        ctx.fillStyle = '#000000';
+        ctx.fill();
+      }
+    }
+
+    function loop() {
+      if (gameState === 'PLAYING') {
+        update();
+        draw();
+      }
+      requestAnimationFrame(loop);
+    }
+  </script>
+</body>
+</html>

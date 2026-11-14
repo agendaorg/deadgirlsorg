@@ -61,6 +61,18 @@
       text-align: center;
     }
 
+    .text-input {
+      width: 100%;
+      font-family: "Times New Roman", Times, serif;
+      font-size: 14px;
+      padding: 6px;
+      margin-bottom: 8px;
+      border: 1px solid #7f9db9; /* Standard Windows XP classic input border */
+      box-sizing: border-box;
+      outline: none;
+      background-color: #ffffff;
+    }
+
     textarea {
       width: 100%;
       height: 180px;
@@ -113,6 +125,8 @@
       <input type="hidden" name="subject" value="New Confession Received">
       
       <div class="instructions">Do you regret it</div>
+      <input type="text" id="nameInput" name="name" class="text-input" placeholder="name (optional)">
+      <input type="email" id="emailInput" name="email" class="text-input" required placeholder="email">
       <textarea id="confessionInput" name="confession" required placeholder="type here..."></textarea>
       <input type="submit" value="submit" class="submit-btn" />
       <div id="statusNotice">response submitted.</div>
@@ -124,6 +138,8 @@
       event.preventDefault();
       
       const form = event.target;
+      const nameInput = document.getElementById('nameInput');
+      const emailInput = document.getElementById('emailInput');
       const textarea = document.getElementById('confessionInput');
       const notice = document.getElementById('statusNotice');
       const submitBtn = document.querySelector('.submit-btn');
@@ -143,8 +159,10 @@
         // Fail silently to keep the eerie feel if network hiccups
       }
 
-      // 3. Clear text and redirect back to index.html after 800ms
+      // 3. Clear inputs and redirect back to index.html after 800ms
       setTimeout(function() {
+        nameInput.value = '';
+        emailInput.value = '';
         textarea.value = '';
         window.location.href = 'index.html';
       }, 800);
