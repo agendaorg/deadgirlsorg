@@ -102,7 +102,7 @@
       z-index: 20;
     }
 
-    /* Full Color MP4 Surveillance & Intro Video Display (Zero tint or transparency) */
+    /* Full Color MP4 Surveillance & Intro Video Display */
     #surveillanceVideo {
       position: absolute;
       inset: 0;
@@ -165,31 +165,6 @@
       border-style: inset;
     }
 
-    /* Attendance Drawing Interface */
-    #drawing-container {
-      display: none;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: #ffffff;
-      color: #000000;
-      border: 1px solid #000000;
-      padding: 18px;
-      z-index: 30;
-      text-align: center;
-      box-sizing: border-box;
-    }
-
-    #sketchCanvas {
-      border: 1px solid #000000;
-      background: #ffffff;
-      cursor: crosshair;
-      touch-action: none;
-      display: block;
-      margin: 0 auto 10px auto;
-    }
-
     /* Story Context Screen */
     #story-overlay {
       display: none;
@@ -244,7 +219,7 @@
   <div id="intro-screen" class="screen-overlay">
     <div class="screen-text">
       It's November 2003. You are locked inside a notorious underground psychological conditioning facility built for elite pop stars and public figures. The facility tests your mental compliance by forcing you to watch surveillance video feeds streamed directly from internal archives.<br><br>
-      To survive you must bypass attendance checks and escape before they find you.
+      To survive you must bypass security feeds and escape before they find you.
     </div>
     <button class="classic-btn" onclick="triggerWarningScreen()">[continue]</button>
   </div>
@@ -277,19 +252,10 @@
 
   <canvas id="gameCanvas"></canvas>
 
-  <!-- Attendance Drawing Interface (3 Stages with 40s Timer) -->
-  <div id="drawing-container">
-    <div id="draw-prompt-title" style="font-size: 13px; margin-bottom: 4px; font-weight: bold;">ATTENDANCE SUBMISSION [PRODIGY PROTOCOL]</div>
-    <div id="draw-prompt-desc" style="font-size: 11px; margin-bottom: 10px; color: #555;">draw a happy family</div>
-    <div id="draw-timer-display" style="font-size: 12px; color: #ff0000; margin-bottom: 8px;">time left: 40s</div>
-    <canvas id="sketchCanvas" width="280" height="150"></canvas>
-    <button class="classic-btn" onclick="submitAttendanceDrawing()">[submit for attendance]</button>
-  </div>
-
   <!-- Story Context Screen -->
   <div id="story-overlay">
     <div class="screen-text" style="font-size: 16px; font-style: italic; color: #222222; margin-bottom: 30px;">
-      "You: that should buy me enough time to leave this place.."
+      "You: security relays are dead. That buys me enough time to slip out."
     </div>
     <button class="classic-btn" onclick="proceedToFinalEscape()">[continue escape]</button>
   </div>
@@ -307,7 +273,6 @@
     const statusBar = document.getElementById('status-bar');
     const promptText = document.getElementById('prompt-text');
     const controlsHint = document.getElementById('controls-hint');
-    const drawingContainer = document.getElementById('drawing-container');
     const storyOverlay = document.getElementById('story-overlay');
     const overlay = document.getElementById('overlay');
     const overlayMsg = document.getElementById('overlay-message');
@@ -690,13 +655,13 @@
           stopStaticNoise();
           document.getElementById('warning-screen').style.display = 'none';
           
-          // Start Introduction 1 MP4 sequence
+          // Start Introduction 1 MP4 sequence directly, then go to Level 1
           initIntroSequence1();
         }
       }, 1000);
     }
 
-    // --- EXACT 40-SECOND INTRODUCTION 1 WITH SEAMLESS STATIC TRANSITION ---
+    // --- EXACT 40-SECOND INTRODUCTION 1 WITH TRANSITION TO LEVEL 1 ---
     let introTimer = null;
 
     function initIntroSequence1() {
@@ -712,19 +677,21 @@
 
       introTimer = setInterval(() => {
         secondsElapsed++;
-        // EXACTLY AT 40 SECONDS: Trigger broadcast static transition into Intro 2
+        // EXACTLY AT 40 SECONDS: Trigger static transition and enter game Level 1 directly
         if (secondsElapsed >= 40) {
           clearInterval(introTimer);
-          triggerBroadcastStaticTransition();
+          surveillanceVideo.pause();
+          surveillanceVideo.style.display = 'none';
+          triggerIntroStaticTransition();
         }
       }, 1000);
     }
 
-    function triggerBroadcastStaticTransition() {
+    function triggerIntroStaticTransition() {
       playLoudStaticTransition();
       document.getElementById('jumpEyeCanvas').style.display = 'block';
       overlayMsg.textContent = 'broadcast interruption';
-      overlaySub.textContent = 'switching archive feed...';
+      overlaySub.textContent = 'initializing security relay bypass...';
       overlay.style.display = 'flex';
 
       let scareFrames = 0;
@@ -741,138 +708,14 @@
       setTimeout(() => {
         clearInterval(scareInterval);
         overlay.style.display = 'none';
-        initIntroSequence2();
-      }, 2600);
-    }
-
-    function initIntroSequence2() {
-      statusBar.textContent = 'INTRO // 02';
-      surveillanceVideo.src = 'images/Introduction2.mp4';
-      surveillanceVideo.load();
-      surveillanceVideo.muted = false;
-      surveillanceVideo.style.display = 'block';
-      surveillanceVideo.play().catch(e => {});
-
-      // When Introduction 2 finishes playing naturally, start the game at Level 1
-      surveillanceVideo.onended = () => {
-        surveillanceVideo.onended = null;
-        surveillanceVideo.pause();
-        surveillanceVideo.style.display = 'none';
         cameraSwitcher.style.display = 'block';
         switchCamera('images/camera1.mp4', 1);
         initLevel(1);
         loop();
-      };
-
-      // Fallback timer in case onended doesn't fire on certain browsers
-      setTimeout(() => {
-        if (surveillanceVideo.src.includes('Introduction2.mp4') && gameState === 'STOPPED') {
-          surveillanceVideo.onended = null;
-          surveillanceVideo.pause();
-          surveillanceVideo.style.display = 'none';
-          cameraSwitcher.style.display = 'block';
-          switchCamera('images/camera1.mp4', 1);
-          initLevel(1);
-          loop();
-        }
-      }, 25000);
+      }, 2600);
     }
 
-    // --- LEVEL 4 ATTENDANCE DRAWING LOGIC (40s Timer) ---
-    const sketchCanvas = document.getElementById('sketchCanvas');
-    const sCtx = sketchCanvas.getContext('2d');
-    let isDrawing = false;
-    let drawnPixelsCount = 0;
-    let attendanceStage = 1; 
-    let attendanceTimer = 40;
-    let attendanceInterval = null;
-
-    function resetSketch() {
-      sCtx.fillStyle = '#ffffff';
-      sCtx.fillRect(0, 0, sketchCanvas.width, sketchCanvas.height);
-      sCtx.strokeStyle = '#cccccc';
-      sCtx.lineWidth = 1;
-      sCtx.setLineDash([3, 3]);
-      sCtx.strokeRect(40, 20, 200, 110);
-      sCtx.setLineDash([]);
-      drawnPixelsCount = 0;
-    }
-
-    sketchCanvas.addEventListener('pointerdown', (e) => {
-      isDrawing = true;
-      const rect = sketchCanvas.getBoundingClientRect();
-      sCtx.beginPath();
-      sCtx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
-    });
-
-    sketchCanvas.addEventListener('pointermove', (e) => {
-      if (!isDrawing) return;
-      const rect = sketchCanvas.getBoundingClientRect();
-      sCtx.strokeStyle = '#000000';
-      sCtx.lineWidth = 3;
-      sCtx.lineCap = 'round';
-      sCtx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-      sCtx.stroke();
-      drawnPixelsCount++;
-    });
-
-    window.addEventListener('pointerup', () => {
-      isDrawing = false;
-    });
-
-    function startAttendanceTimer() {
-      if (attendanceInterval) clearInterval(attendanceInterval);
-      attendanceTimer = 40;
-      document.getElementById('draw-timer-display').textContent = 'time left: ' + attendanceTimer + 's';
-
-      attendanceInterval = setInterval(() => {
-        if (gameState !== 'PLAYING') return;
-        attendanceTimer--;
-        document.getElementById('draw-timer-display').textContent = 'time left: ' + attendanceTimer + 's';
-        if (attendanceTimer <= 0) {
-          clearInterval(attendanceInterval);
-          triggerCaught();
-        }
-      }, 1000);
-    }
-
-    window.submitAttendanceDrawing = function() {
-      initAudio();
-      playOminousThud(120, 0.3);
-
-      let score = Math.min(10, Math.max(1, (drawnPixelsCount / 25) + (Math.random() * 2)));
-
-      if (score < 4.0) {
-        if (attendanceInterval) clearInterval(attendanceInterval);
-        triggerCaught();
-      } else {
-        attendanceStage++;
-        if (attendanceStage === 2) {
-          document.getElementById('draw-prompt-desc').textContent = 'draw an angry family';
-          resetSketch();
-          startAttendanceTimer();
-        } else if (attendanceStage === 3) {
-          document.getElementById('draw-prompt-desc').textContent = 'draw a dead family';
-          resetSketch();
-          startAttendanceTimer();
-        } else {
-          if (attendanceInterval) clearInterval(attendanceInterval);
-          drawingContainer.style.display = 'none';
-          
-          storyOverlay.style.display = 'flex';
-          statusBar.textContent = 'DIALOGUE';
-          promptText.textContent = '';
-          controlsHint.textContent = '';
-        }
-      }
-    };
-
-    window.proceedToFinalEscape = function() {
-      storyOverlay.style.display = 'none';
-      initLevel(6);
-    };
-
-    // Game State & 25-Second Timer
+    // --- GAME STATE & TIMERS ---
     let level = 1;
     let gameState = 'STOPPED';
     let frame = 0;
@@ -897,6 +740,18 @@
     let waveLockFrames = 0;
     const requiredLockFrames = 85;
     let level2Transitioning = false;
+
+    // Level 4 (REPLACED ATTENDANCE): Camera Power Shutdown Panel
+    let cameraRelays = [
+      { id: 1, name: 'CAM_01_FEED', active: true, x: 0, y: 0, w: 180, h: 45 },
+      { id: 2, name: 'CAM_02_FEED', active: true, x: 0, y: 0, w: 180, h: 45 },
+      { id: 3, name: 'CAM_03_FEED', active: true, x: 0, y: 0, w: 180, h: 45 },
+      { id: 4, name: 'PERIMETER_IR', active: true, x: 0, y: 0, w: 180, h: 45 },
+      { id: 5, name: 'AUDIO_RELAY', active: true, x: 0, y: 0, w: 180, h: 45 },
+      { id: 6, name: 'MAIN_GRID_LOCK', active: true, x: 0, y: 0, w: 180, h: 45 }
+    ];
+    let shutdownTimer = 40;
+    let shutdownInterval = null;
 
     // Level 5 & 6 variables (Flashes & Eye Evasion)
     const player = {
@@ -929,14 +784,13 @@
       level = lvl;
       gameState = 'PLAYING';
       overlay.style.display = 'none';
-      drawingContainer.style.display = 'none';
       storyOverlay.style.display = 'none';
       frame = 0;
       stopVoiceChatter();
-      startLevelTimer();
+      if (level !== 4) startLevelTimer();
 
       if (level === 1) {
-        statusBar.textContent = '1 / 6 [25s]';
+        statusBar.textContent = '1 / 5 [25s]';
         promptText.textContent = 'disconnect — break the phone';
         controlsHint.textContent = '[tap repeatedly or press space]';
         phoneHits = 0;
@@ -945,7 +799,7 @@
         shards = [];
       }
       else if (level === 2) {
-        statusBar.textContent = '2 / 6 [25s]';
+        statusBar.textContent = '2 / 5 [25s]';
         promptText.textContent = 'intercept transmission — match the red audio wave';
         controlsHint.textContent = '[tap repeatedly / hold space to amplify wave & lock voice signal]';
         waveAmp = 20;
@@ -955,7 +809,7 @@
         startVoiceChatter();
       }
       else if (level === 5) {
-        statusBar.textContent = '5 / 6 [25s]';
+        statusBar.textContent = '4 / 5 [25s]';
         promptText.textContent = 'slip past the flashes — reach the top';
         controlsHint.textContent = '[hold / drag or use arrow keys]';
         player.x = W / 2;
@@ -974,18 +828,24 @@
         }
       }
       else if (level === 4) {
-        statusBar.textContent = '4 / 6 [attendance]';
-        promptText.textContent = 'prodigy attendance — fake home logs (40s per drawing)';
-        controlsHint.textContent = '[draw inside box and click submit for attendance]';
-        drawingContainer.style.display = 'block';
-        attendanceStage = 1;
-        document.getElementById('draw-prompt-title').textContent = 'ATTENDANCE SUBMISSION [PRODIGY PROTOCOL]';
-        document.getElementById('draw-prompt-desc').textContent = 'draw a happy family';
-        resetSketch();
-        startAttendanceTimer();
+        // Simple Technical Power-Off Security Cameras Level
+        statusBar.textContent = '3 / 5 [shutdown]';
+        promptText.textContent = 'security grid shutdown — cut all active relays';
+        controlsHint.textContent = '[click relays repeatedly until status reads OFFLINE]';
+        cameraRelays.forEach(r => r.active = true);
+        shutdownTimer = 40;
+        if (shutdownInterval) clearInterval(shutdownInterval);
+        shutdownInterval = setInterval(() => {
+          if (gameState !== 'PLAYING' || level !== 4) return;
+          shutdownTimer--;
+          if (shutdownTimer <= 0) {
+            clearInterval(shutdownInterval);
+            triggerCaught();
+          }
+        }, 1000);
       }
       else if (level === 6) {
-        statusBar.textContent = '6 / 6 [25s]';
+        statusBar.textContent = '5 / 5 [25s]';
         promptText.textContent = 'leave the world — freeze when the eye turns red';
         controlsHint.textContent = '[hold / up arrow to walk into the white — stop when watched]';
         player.x = W / 2;
@@ -1002,9 +862,7 @@
       gameState = 'CAUGHT';
       stopVoiceChatter();
       if (levelTimerInterval) clearInterval(levelTimerInterval);
-      if (attendanceInterval) clearInterval(attendanceInterval);
-      drawingContainer.style.display = 'none';
-      storyOverlay.style.display = 'none';
+      if (shutdownInterval) clearInterval(shutdownInterval);
       cameraSwitcher.style.display = 'none';
       surveillanceVideo.pause();
 
@@ -1101,7 +959,34 @@
       isPointerDown = true;
       pointerX = e.clientX;
       pointerY = e.clientY;
-      handleActionInput();
+
+      // Handle Level 4 Camera Shutdown Clicks
+      if (level === 4 && gameState === 'PLAYING') {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+
+        cameraRelays.forEach(r => {
+          if (r.active && mx >= r.x && mx <= r.x + r.w && my >= r.y && my <= r.y + r.h) {
+            r.active = false;
+            playOminousThud(130, 0.08);
+
+            // Check if all relays are powered off
+            if (cameraRelays.every(rel => !rel.active)) {
+              if (shutdownInterval) clearInterval(shutdownInterval);
+              promptText.textContent = 'grid offline — security locks disengaged';
+              setTimeout(() => {
+                storyOverlay.style.display = 'flex';
+                statusBar.textContent = 'DIALOGUE';
+                promptText.textContent = '';
+                controlsHint.textContent = '';
+              }, 600);
+            }
+          }
+        });
+      } else {
+        handleActionInput();
+      }
     });
 
     canvas.addEventListener('pointermove', (e) => {
@@ -1114,6 +999,11 @@
     window.addEventListener('pointerup', () => {
       isPointerDown = false;
     });
+
+    window.proceedToFinalEscape = function() {
+      storyOverlay.style.display = 'none';
+      initLevel(6);
+    };
 
     function update() {
       if (gameState !== 'PLAYING') return;
@@ -1252,7 +1142,7 @@
 
     function draw() {
       ctx.clearRect(0, 0, W, H);
-      statusBar.textContent = level + ' / 6 [' + levelTimeLeft + 's]';
+      statusBar.textContent = level + ' / 5 [' + (level === 4 ? shutdownTimer + 's' : levelTimeLeft + 's') + ']';
 
       if (level === 1) {
         const cx = W / 2 + (Math.random() - 0.5) * phoneShake;
@@ -1380,6 +1270,56 @@
         ctx.fillStyle = '#000000';
         ctx.textAlign = 'center';
         ctx.fillText('voice lock: ' + Math.floor(lockPct * 100) + '%', W / 2, barY + 26);
+      }
+
+      else if (level === 4) {
+        // Render minimal simple technical security camera shutdown panel
+        const panelW = Math.min(420, W * 0.85);
+        const panelH = 260;
+        const px = (W - panelW) / 2;
+        const py = (H - panelH) / 2;
+
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(px, py, panelW, panelH);
+
+        ctx.fillStyle = '#f8f8f8';
+        ctx.fillRect(px, py, panelW, 30);
+        ctx.strokeStyle = '#000000';
+        ctx.strokeRect(px, py, panelW, 30);
+
+        ctx.font = '12px "Times New Roman"';
+        ctx.fillStyle = '#000000';
+        ctx.textAlign = 'left';
+        ctx.fillText('SECURITY RELAY POWER PANEL // 2003', px + 10, py + 19);
+
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#ff0000';
+        ctx.fillText('TIME: ' + shutdownTimer + 's', px + panelW - 10, py + 19);
+
+        // Draw Relay Buttons
+        let startY = py + 45;
+        cameraRelays.forEach((r, idx) => {
+          r.x = px + 20;
+          r.y = startY + (idx * 34);
+          r.w = panelW - 40;
+          r.h = 28;
+
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 1;
+          ctx.fillStyle = r.active ? '#eeeeee' : '#111111';
+          ctx.fillRect(r.x, r.y, r.w, r.h);
+          ctx.strokeRect(r.x, r.y, r.w, r.h);
+
+          ctx.font = '11px "Times New Roman"';
+          ctx.textAlign = 'left';
+          ctx.fillStyle = r.active ? '#000000' : '#ffffff';
+          ctx.fillText('[' + (idx + 1) + '] ' + r.name, r.x + 10, r.y + 18);
+
+          ctx.textAlign = 'right';
+          ctx.fillStyle = r.active ? '#ff0000' : '#00aa00';
+          ctx.fillText(r.active ? 'STATUS: ACTIVE (CLICK TO CUT)' : 'STATUS: OFFLINE', r.x + r.w - 10, r.y + 18);
+        });
       }
 
       else if (level === 5) {
