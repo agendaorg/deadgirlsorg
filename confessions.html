@@ -16,6 +16,36 @@
       font-family: "Times New Roman", Times, serif;
     }
 
+    /* Fullscreen Clean Intro Overlay (Corporate AOL Minimalist Symbol Eye) */
+    #introEyeScreen {
+      position: fixed;
+      inset: 0;
+      background-color: #ffffff;
+      z-index: 9999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .corporate-eye-container {
+      width: 80px;
+      height: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #corporateEyeSvg {
+      width: 72px;
+      height: 36px;
+      display: block;
+    }
+
+    /* Main Form Page (Hidden until intro eye sequence finishes) */
+    #mainPageContent {
+      display: none;
+    }
+
     .header-nav {
       position: absolute;
       top: 10px;
@@ -67,7 +97,7 @@
       font-size: 14px;
       padding: 6px;
       margin-bottom: 8px;
-      border: 1px solid #7f9db9; /* Standard Windows XP classic input border */
+      border: 1px solid #7f9db9;
       box-sizing: border-box;
       outline: none;
       background-color: #ffffff;
@@ -79,7 +109,7 @@
       font-family: "Times New Roman", Times, serif;
       font-size: 14px;
       padding: 6px;
-      border: 1px solid #7f9db9; /* Standard Windows XP classic input border */
+      border: 1px solid #7f9db9;
       box-sizing: border-box;
       resize: vertical;
       outline: none;
@@ -100,40 +130,79 @@
       border-style: inset;
     }
 
-    /* Secret confirmation message style */
+    /* Looped small "dead girls" font-cycling status under submit button */
     #statusNotice {
       display: none;
-      font-size: 14px;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      text-transform: lowercase;
       color: #000000;
-      margin-top: 12px;
+      margin-top: 14px;
       text-align: center;
+      min-height: 16px;
     }
   </style>
 </head>
 <body>
 
-  <!-- Quiet raw top-left link back home -->
-  <div class="header-nav">
-    <a href="index.html">&lt; back</a> 
+  <!-- Standalone Intro Screen: Corporate Minimalist Symbol Eye -->
+  <div id="introEyeScreen">
+    <div class="corporate-eye-container">
+      <svg id="corporateEyeSvg" viewBox="0 0 80 40" xmlns="http://www.w3.org/2000/svg">
+        <!-- Clean geometric corporate almond outline -->
+        <path d="M2 20 C20 4, 60 4, 78 20 C60 36, 20 36, 2 20 Z" fill="none" stroke="#000000" stroke-width="2"/>
+        <!-- Precise crisp corporate solid geometric iris/pupil unit -->
+        <circle id="corPupil" cx="40" cy="20" r="7" fill="#000000"/>
+        <!-- Top eyelid overlay for precise corporate blink simulation -->
+        <path id="corEyelid" d="M2 20 C20 4, 60 4, 78 20 C60 20, 20 20, 2 20 Z" fill="#ffffff" style="opacity: 0;"/>
+      </svg>
+    </div>
   </div>
 
-  <!-- Central form area -->
-  <div class="main-container">
-    <form class="confession-form" id="voidForm" action="https://api.web3forms.com/submit" method="POST" onsubmit="handleVoidSubmit(event)">
-      
-      <input type="hidden" name="access_key" value="72247000-1724-4fa1-a0a8-5a91c8e35a93">
-      <input type="hidden" name="subject" value="New Confession Received">
-      
-      <div class="instructions">What are you afraid of</div>
-      <input type="text" id="nameInput" name="name" class="text-input" placeholder="name">
-      <input type="email" id="emailInput" name="email" class="text-input" required placeholder="email">
-      <textarea id="confessionInput" name="confession" required placeholder="type here..."></textarea>
-      <input type="submit" value="submit" class="submit-btn" />
-      <div id="statusNotice">response submitted.</div>
-    </form>
+  <!-- Main Confession Form View -->
+  <div id="mainPageContent">
+    <div class="header-nav">
+      <a href="index.html">&lt; back</a> 
+    </div>
+
+    <div class="main-container">
+      <form class="confession-form" id="voidForm" action="https://api.web3forms.com/submit" method="POST" onsubmit="handleVoidSubmit(event)">
+        
+        <input type="hidden" name="access_key" value="72247000-1724-4fa1-a0a8-5a91c8e35a93">
+        <input type="hidden" name="subject" value="New Confession Received">
+        
+        <div class="instructions">What are you afraid of</div>
+        <input type="text" id="nameInput" name="name" class="text-input" placeholder="name">
+        <input type="email" id="emailInput" name="email" class="text-input" required placeholder="email">
+        <textarea id="confessionInput" name="confession" required placeholder="type here..."></textarea>
+        <input type="submit" value="submit" class="submit-btn" />
+        <div id="statusNotice">dead girls</div>
+      </form>
+    </div>
   </div>
 
   <script>
+    // 1. Corporate Symbol Eye Intro Animation Sequence
+    const corEyelid = document.getElementById('corEyelid');
+
+    function triggerCorporateBlink() {
+      corEyelid.style.opacity = '1';
+      setTimeout(() => {
+        corEyelid.style.opacity = '0';
+      }, 150);
+    }
+
+    // Sequence timing on page load
+    setTimeout(triggerCorporateBlink, 350);
+    setTimeout(triggerCorporateBlink, 1150);
+
+    // Hide intro screen and reveal main page content after sequence completes
+    setTimeout(() => {
+      document.getElementById('introEyeScreen').style.display = 'none';
+      document.getElementById('mainPageContent').style.display = 'block';
+    }, 1900);
+
+    // 2. Submission Handler with Looped Small "dead girls" Font Cycling
     async function handleVoidSubmit(event) {
       event.preventDefault();
       
@@ -144,12 +213,28 @@
       const notice = document.getElementById('statusNotice');
       const submitBtn = document.querySelector('.submit-btn');
       
-      // 1. Show confirmation notice & disable button
+      // Show looped "dead girls" font animation & disable button
       notice.style.display = 'block';
       submitBtn.disabled = true;
 
+      const fontPool = [
+        '"Times New Roman", Times, serif',
+        'Courier New, Courier, monospace',
+        'Arial, Helvetica, sans-serif',
+        'Georgia, serif',
+        'Impact, sans-serif',
+        'Verdana, Geneva, sans-serif',
+        'Trebuchet MS, sans-serif'
+      ];
+
+      const fontLoop = setInterval(() => {
+        notice.style.fontFamily = fontPool[Math.floor(Math.random() * fontPool.length)];
+        notice.style.fontWeight = Math.random() > 0.5 ? 'bold' : 'normal';
+        notice.style.fontStyle = Math.random() > 0.7 ? 'italic' : 'normal';
+      }, 130);
+
       try {
-        // 2. Submit form data asynchronously in the background to the email handler
+        // Transmit name, email, and confession to deadgirlsclub@aol.com via Web3Forms
         const formData = new FormData(form);
         await fetch(form.action, {
           method: 'POST',
@@ -159,13 +244,14 @@
         // Fail silently to keep the eerie feel if network hiccups
       }
 
-      // 3. Clear inputs and redirect back to index.html after 800ms
+      // Clear inputs, stop loop, and redirect back to index.html
       setTimeout(function() {
+        clearInterval(fontLoop);
         nameInput.value = '';
         emailInput.value = '';
         textarea.value = '';
         window.location.href = 'index.html';
-      }, 800);
+      }, 1800);
     }
   </script>
 
