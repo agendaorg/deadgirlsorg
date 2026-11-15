@@ -16,7 +16,7 @@
       font-family: "Times New Roman", Times, serif;
     }
 
-    /* Fullscreen Clean Intro Overlay (Corporate AOL Minimalist Symbol Eye) */
+    /* Fullscreen Clean Intro Overlay (8-Second Sequence with Sharp Line Blink) */
     #introEyeScreen {
       position: fixed;
       inset: 0;
@@ -25,9 +25,10 @@
       display: flex;
       justify-content: center;
       align-items: center;
+      transition: opacity 0.6s ease;
     }
 
-    .corporate-eye-container {
+    .eye-wrapper {
       width: 80px;
       height: 40px;
       display: flex;
@@ -35,13 +36,17 @@
       align-items: center;
     }
 
-    #corporateEyeSvg {
-      width: 72px;
+    #eyeSvg {
+      width: 64px;
       height: 36px;
       display: block;
     }
 
-    /* Main Form Page (Hidden until intro eye sequence finishes) */
+    #pupilGroup {
+      transition: transform 0.8s ease-in-out;
+    }
+
+    /* Main Form Page (Hidden until 8s intro sequence finishes) */
     #mainPageContent {
       display: none;
     }
@@ -145,16 +150,15 @@
 </head>
 <body>
 
-  <!-- Standalone Intro Screen: Corporate Minimalist Symbol Eye -->
+  <!-- Standalone Intro Screen: 8-Second Sequence with Literal Line Blink -->
   <div id="introEyeScreen">
-    <div class="corporate-eye-container">
-      <svg id="corporateEyeSvg" viewBox="0 0 80 40" xmlns="http://www.w3.org/2000/svg">
-        <!-- Clean geometric corporate almond outline -->
-        <path d="M2 20 C20 4, 60 4, 78 20 C60 36, 20 36, 2 20 Z" fill="none" stroke="#000000" stroke-width="2"/>
-        <!-- Precise crisp corporate solid geometric iris/pupil unit -->
-        <circle id="corPupil" cx="40" cy="20" r="7" fill="#000000"/>
-        <!-- Top eyelid overlay for precise corporate blink simulation -->
-        <path id="corEyelid" d="M2 20 C20 4, 60 4, 78 20 C60 20, 20 20, 2 20 Z" fill="#ffffff" style="opacity: 0;"/>
+    <div class="eye-wrapper">
+      <svg id="eyeSvg" viewBox="0 0 60 32" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 16 Q30 -8 58 16 Q30 40 2 16 Z" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+        <g id="pupilGroup">
+          <circle cx="30" cy="16" r="8" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+          <circle cx="30" cy="16" r="3.5" fill="#000000"/>
+        </g>
       </svg>
     </div>
   </div>
@@ -182,25 +186,72 @@
   </div>
 
   <script>
-    // 1. Corporate Symbol Eye Intro Animation Sequence
-    const corEyelid = document.getElementById('corEyelid');
+    const eyeSvg = document.getElementById('eyeSvg');
+    const introScreen = document.getElementById('introEyeScreen');
 
-    function triggerCorporateBlink() {
-      corEyelid.style.opacity = '1';
-      setTimeout(() => {
-        corEyelid.style.opacity = '0';
-      }, 150);
+    // Current offset tracking for looking around while keeping the pupil inside the open eye state
+    let currentOffsetX = 0;
+    let currentOffsetY = 0;
+
+    function renderEye(isOpen, offsetX = 0, offsetY = 0) {
+      currentOffsetX = offsetX;
+      currentOffsetY = offsetY;
+
+      if (!isOpen) {
+        // Literal closed horizontal dash line '-'
+        eyeSvg.innerHTML = `
+          <line x1="8" y1="16" x2="52" y2="16" stroke="#000000" stroke-width="2" stroke-linecap="round"/>
+        `;
+      } else {
+        // Fully open eye with pupil shifted to current gaze coordinates
+        eyeSvg.innerHTML = `
+          <path d="M2 16 Q30 -8 58 16 Q30 40 2 16 Z" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+          <g transform="translate(${offsetX}, ${offsetY})">
+            <circle cx="30" cy="16" r="8" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+            <circle cx="30" cy="16" r="3.5" fill="#000000"/>
+          </g>
+        `;
+      }
     }
 
-    // Sequence timing on page load
-    setTimeout(triggerCorporateBlink, 350);
-    setTimeout(triggerCorporateBlink, 1150);
+    function executeSharpBlink() {
+      renderEye(false); // Snap to literal closed line '-'
+      setTimeout(() => {
+        renderEye(true, currentOffsetX, currentOffsetY); // Snap back open
+      }, 160);
+    }
 
-    // Hide intro screen and reveal main page content after sequence completes
+    // Choreographed 8-second timeline with distinct blinking and looking around
+    renderEye(true, 0, 0);
+
+    setTimeout(executeSharpBlink, 800);                    // 1st blink
+
     setTimeout(() => {
-      document.getElementById('introEyeScreen').style.display = 'none';
-      document.getElementById('mainPageContent').style.display = 'block';
-    }, 1900);
+      renderEye(true, -5, 1);                              // Look left
+    }, 1800);
+
+    setTimeout(() => {
+      renderEye(true, 6, -1);                              // Look right
+    }, 3600);
+
+    setTimeout(executeSharpBlink, 5000);                    // 2nd blink (mid-sequence)
+
+    setTimeout(() => {
+      renderEye(true, 0, 2);                              // Look down
+    }, 6200);
+
+    setTimeout(() => {
+      renderEye(true, 0, 0);                              // Center back
+    }, 7200);
+
+    // Fade out intro overlay at 8 seconds and reveal the confession form
+    setTimeout(() => {
+      introScreen.style.opacity = '0';
+      setTimeout(() => {
+        introScreen.style.display = 'none';
+        document.getElementById('mainPageContent').style.display = 'block';
+      }, 600);
+    }, 8000);
 
     // 2. Submission Handler with Looped Small "dead girls" Font Cycling
     async function handleVoidSubmit(event) {
