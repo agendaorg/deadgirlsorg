@@ -17,7 +17,7 @@
       overflow: hidden;
     }
 
-    /* Fullscreen looping background video pulling from images folder */
+    /* Fullscreen looping background video */
     #bgVideo {
       position: absolute;
       inset: 0;
@@ -42,7 +42,7 @@
       z-index: 2;
     }
 
-    /* Standard classic blue link appearance with a subtle background contrast */
+    /* Standard classic blue link appearance with a subtle background contrast if needed */
     a.site-link {
       color: #0000ee;
       font-size: 16px;
@@ -63,8 +63,8 @@
 </head>
 <body>
 
-  <!-- Fullscreen Looping Background Video with native audio enabled -->
-  <video id="bgVideo" src="images/loop.mp4" autoplay loop playsinline></video>
+  <!-- Fullscreen Looping Background Video -->
+  <video id="bgVideo" src="images/loop.mp4" autoplay muted loop playsinline></video>
 
   <!-- Centered links floating in the middle of the screen -->
   <div class="center-container">
@@ -72,28 +72,6 @@
     <a href="https://hollywoodsigns.org" class="site-link">join club</a>
   </div>
 
-  <script>
-    const video = document.getElementById('bgVideo');
-
-    // Attempt instant unmuted playback on load; if browser policy blocks it,
-    // fallback to playing muted immediately so the loop runs, then unmute on the first click anywhere.
-    window.addEventListener('DOMContentLoaded', () => {
-      video.muted = false;
-      video.play().catch(() => {
-        video.muted = true;
-        video.play();
-        
-        const unlockAudio = () => {
-          video.muted = false;
-          window.removeEventListener('click', unlockAudio);
-          window.removeEventListener('keydown', unlockAudio);
-        };
-        window.addEventListener('click', unlockAudio);
-        window.addEventListener('keydown', unlockAudio);
-      });
-    });
-  </script>
-
 </body>
 </html>
-```[cite: 2]
+```[cite: 3]
